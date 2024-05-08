@@ -3,12 +3,55 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 
-int jobExecutorServer() {
 
+int jobExecutorServer(int fd) {
+    
+    // read the number of arguments from jobCommander
+    int amount;
+    read(fd, &amount, sizeof(int));
+    amount -= 1;
+
+    // read the string from the pipe
+    char arr[300];
+    read(fd, arr, sizeof(arr));
+
+    // tokenize the string
+    char** tokenized = (char **)malloc(amount * sizeof(char*));   
+    for (int i = 0 ; i < amount ; i++) {
+        tokenized[i] = malloc(100 * sizeof(char));
+    } 
+    char* tok = strtok(arr, " ");
+    int count = 0;
+    while (tok != NULL) {
+        if (count == amount) {
+            break;
+        }
+        strcpy(tokenized[count], tok);
+        tok = strtok(NULL, " ");
+        count++;
+    }
+
+    for (int i = 0 ; i < amount ; i++) {
+        printf("i = %s\n", tokenized[i]);
+    }
+
+
+    // free the memory of "tokenized"
+    for (int i = 0; i < amount; i++) {
+        if (tokenized[i] != NULL) {
+            free(tokenized[i]);
+        }
+    }
 }
 
-
+void signal_handler(int sig) {
+    printf("Server got the signal!\n");
+}
 
 int main() {
     // create jobExecutorServer.txt
@@ -18,15 +61,24 @@ int main() {
     fclose(job_ex_ser_txt);
 
 
-    // do staff needed
-    jobExecutorServer();
-
-
-    // delete jobExecutorServer.txt if
-    int ended = 0;
-    if (ended) {
-        remove("jobExecutorServer.txt");
+    // wait signal from jobCommander and then read from the pipe
+    int fd = open("comm", O_RDONLY);
+    signal(SIGUSR1, signal_handler);
+    int executed = 0;
+    while (1) {
+        pause();
+        if (!executed) {
+            jobExecutorServer(fd);
+            close(fd);
+            remove("jobExecutorServer.txt");
+            executed = 1;
+        }
     }
 
-    //change test
+
+    // delete jobExecutorServer.txt if exited
+    int exited = 1;
+    if (exited) {
+        remove("jobExecutorServer.txt");
+    }
 }
