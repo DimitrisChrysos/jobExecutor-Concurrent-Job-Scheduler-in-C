@@ -16,14 +16,18 @@ int jobExecutorServer(int fd) {
     read(fd, &amount, sizeof(int));
     amount -= 1;
 
+    // read the total numbers of chars (a bit larger than the actual one)
+    int total_len;
+    read(fd, &total_len, sizeof(int));
+
     // read the string from the pipe
-    char arr[300];
+    char arr[total_len];
     read(fd, arr, sizeof(arr));
 
     // tokenize the string
     char** tokenized = (char **)malloc(amount * sizeof(char*));   
     for (int i = 0 ; i < amount ; i++) {
-        tokenized[i] = malloc(100 * sizeof(char));
+        tokenized[i] = malloc(total_len * sizeof(char));
     } 
     char* tok = strtok(arr, " ");
     int count = 0;
@@ -36,6 +40,7 @@ int jobExecutorServer(int fd) {
         count++;
     }
 
+    // print the tokens of the string (TODO: delete the prints)
     for (int i = 0 ; i < amount ; i++) {
         printf("i = %s\n", tokenized[i]);
     }
@@ -50,7 +55,7 @@ int jobExecutorServer(int fd) {
 }
 
 void signal_handler(int sig) {
-    printf("Server got the signal!\n");
+    printf("Server got the signal from jobCommander!\n");
 }
 
 int main() {
@@ -64,20 +69,19 @@ int main() {
     // wait signal from jobCommander and then read from the pipe
     int fd = open("comm", O_RDONLY);
     signal(SIGUSR1, signal_handler);
-    int executed = 0;
+    int exit = 0;
     while (1) {
         pause();
-        if (!executed) {
+        if (!exit) {
             jobExecutorServer(fd);
-            close(fd);
-            remove("jobExecutorServer.txt");
-            executed = 1;
+            // exit = 1;
         }
     }
 
+    close(fd);
 
     // delete jobExecutorServer.txt if exited
-    int exited = 1;
+    int exited = 0;
     if (exited) {
         remove("jobExecutorServer.txt");
     }
