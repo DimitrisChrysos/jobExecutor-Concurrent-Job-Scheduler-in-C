@@ -95,9 +95,10 @@ int queue_size(Queue myqueue) {
 
 // for Triplets
 
-Triplet* init_triplet(unsigned int jobID, char* job, int queuePosition) {
+Triplet* init_triplet(char* jobID, char* job, int queuePosition) {
     Triplet* mytriplet = (Triplet*)malloc(sizeof(Triplet));
-    mytriplet->jobID = jobID;
+    mytriplet->jobID = (char*)malloc(strlen(jobID) + 1);
+    strcpy(mytriplet->jobID, jobID);
     mytriplet->job = (char*)malloc(strlen(job) + 1);
     strcpy(mytriplet->job, job);
     mytriplet->queuePosition = queuePosition;
@@ -124,9 +125,9 @@ void print_queue_and_stats(Queue* myqueue) {
     Node* temp_node = myqueue->first_node;
     for (int i = 0 ; i < myqueue->size ; i++) {
         Triplet* temp_triplet = temp_node->value;
-        printf("myqueue[%d] jobID = %u\n", i, temp_triplet->jobID);
+        printf("myqueue[%d] jobID = %s\n", i, temp_triplet->jobID);
         printf("myqueue[%d] job = %s\n", i, temp_triplet->job);
-        printf("myqueue[%d] job = %d\n", i, temp_triplet->queuePosition);
+        printf("myqueue[%d] queuePosition = %d\n", i, temp_triplet->queuePosition);
         temp_node = temp_node->child;
     }
     printf("\n");

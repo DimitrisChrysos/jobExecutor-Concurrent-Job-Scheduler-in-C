@@ -10,9 +10,9 @@
 #include "queue.h"
 
 
-int commands(char** tokenized);
+int commands(Queue* myqueue, char** tokenized);
 
-int jobExecutorServer(int fd) {
+int jobExecutorServer(int fd, Queue* myqueue) {
     
     // read the number of arguments from jobCommander
     int amount;
@@ -52,7 +52,7 @@ int jobExecutorServer(int fd) {
     printf("String was successfully received and Tokenized!\n");
 
     // find and exec command
-    commands(tokenized);
+    commands(myqueue, tokenized);
 
     // free the memory of "tokenized"
     for (int i = 0; i < amount; i++) {
@@ -62,17 +62,27 @@ int jobExecutorServer(int fd) {
     }
 }
 
-typedef struct triplet Triplet;
-typedef struct triplet {
-    unsigned int jobID;
-    char* job;
-    int queuePosition;
-} Triplet;
+int issueJob(Queue* myqueue, char* job);
 
-int commands(char** tokenized) {
-    if (strcmp(tokenized[0], "issueJob" == 0)) {
-        printf("Success!\n");
+int commands(Queue* myqueue, char** tokenized) {
+    if (strcmp(tokenized[0], "issueJob" ) == 0) {
+        printf("Inside issueJob!\n");
+        issueJob(myqueue, tokenized[1]);
     }
+}
+
+int issueJob(Queue* myqueue, char* job) {
+    int size = myqueue->size;
+    int queuePosition = size;
+    static int counter = 0;
+    counter++;
+    char jobID[100];
+    sprintf(jobID, "job_%d", counter);
+
+    // create a job Triplet for the queue
+    Triplet* mytriplet = init_triplet(jobID, job, queuePosition);
+    enqueue(myqueue, mytriplet);
+    print_queue_and_stats(myqueue);
 }
 
 void signal_handler(int sig) {
@@ -87,6 +97,9 @@ int main() {
     fprintf(job_ex_ser_txt, "%d", pid);
     fclose(job_ex_ser_txt);
 
+    // create the Queue for the jobs
+    printf("Created the Queue for the jobs!\n");
+    Queue* myqueue = createQueue();
 
     // wait signal from jobCommander and then read from the pipe
     int fd = open("comm", O_RDONLY);
@@ -95,7 +108,7 @@ int main() {
     while (1) {
         pause();
         if (!exit) {
-            jobExecutorServer(fd);
+            jobExecutorServer(fd, myqueue);
             // exit = 1;
         }
     }

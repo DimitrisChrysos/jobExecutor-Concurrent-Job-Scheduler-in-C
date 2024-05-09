@@ -45,13 +45,13 @@ int queue_size(Queue myqueue);
 
 typedef struct triplet Triplet;
 typedef struct triplet {
-    unsigned int jobID;
+    char* jobID;
     char* job;
     int queuePosition;
 } Triplet;
 
 // initalizes a Triplet
-Triplet* init_triplet(unsigned int jobID, char* job, int queuePosition);
+Triplet* init_triplet(char* jobID, char* job, int queuePosition);
 
 // deleted a Triplet
 void delete_triplet(Triplet* mytriplet);
