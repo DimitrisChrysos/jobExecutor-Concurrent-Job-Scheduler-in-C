@@ -55,6 +55,7 @@ int jobExecutorServer(int fd) {
 }
 
 void signal_handler(int sig) {
+    // print info
     printf("Server got the signal from jobCommander!\n");
 }
 

@@ -33,6 +33,8 @@ int jobCommander(int argc, char *argv[]) {
         // file exists -> server is active, fifo already exists
         fscanf(myfile, "%d", &p);
         fclose(myfile);
+
+        // print info
         printf("Server is active!\n");
     }
 
