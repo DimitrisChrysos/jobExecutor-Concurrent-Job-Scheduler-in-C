@@ -7,7 +7,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include "queue.h"
 
+
+int commands(char** tokenized);
 
 int jobExecutorServer(int fd) {
     
@@ -40,17 +43,35 @@ int jobExecutorServer(int fd) {
         count++;
     }
 
-    // print the tokens of the string (TODO: delete the prints)
-    for (int i = 0 ; i < amount ; i++) {
-        printf("i = %s\n", tokenized[i]);
-    }
+    // // print the tokens of the string (TODO: delete the prints)
+    // for (int i = 0 ; i < amount ; i++) {
+    //     printf("i = %s\n", tokenized[i]);
+    // }
 
+    // print info
+    printf("String was successfully received and Tokenized!\n");
+
+    // find and exec command
+    commands(tokenized);
 
     // free the memory of "tokenized"
     for (int i = 0; i < amount; i++) {
         if (tokenized[i] != NULL) {
             free(tokenized[i]);
         }
+    }
+}
+
+typedef struct triplet Triplet;
+typedef struct triplet {
+    unsigned int jobID;
+    char* job;
+    int queuePosition;
+} Triplet;
+
+int commands(char** tokenized) {
+    if (strcmp(tokenized[0], "issueJob" == 0)) {
+        printf("Success!\n");
     }
 }
 

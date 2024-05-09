@@ -5,5 +5,5 @@ jobCommander:
 clean:
 	rm -f jobCommander
 	rm -f jobExecutorServer
-	# rm -f jobExecutorServer.txt
-	# rm -f comm
+	rm -f jobExecutorServer.txt
+	rm -f comm

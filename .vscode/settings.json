@@ -4,6 +4,8 @@
         "types.h": "c",
         "errno.h": "c",
         "fcntl.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "string.h": "c",
+        "queue.h": "c"
     }
 }
