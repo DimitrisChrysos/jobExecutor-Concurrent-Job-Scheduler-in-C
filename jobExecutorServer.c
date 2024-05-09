@@ -80,6 +80,12 @@ char* commands(Queue* myqueue, char** tokenized, char* unix_command) {
         char* message = format_triplet(returned_message);
         return message;
     }
+    // if (strcmp(tokenized[0], "setConcurrency" ) == 0) {
+
+    //     Triplet* returned_message = issueJob(myqueue, unix_command);
+    //     char* message = format_triplet(returned_message);
+    //     return message;
+    // }
 }
 
 Triplet* issueJob(Queue* myqueue, char* job) {
@@ -149,6 +155,7 @@ int main() {
     
 
     // delete jobExecutorServer.txt if exited
+    // TODO: also need to figure out how to free the memory from the Triplets!
     int exited = 0;
     if (exited) {
         remove("jobExecutorServer.txt");
