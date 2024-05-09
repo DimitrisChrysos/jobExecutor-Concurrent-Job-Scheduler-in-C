@@ -10,10 +10,10 @@
 #include "queue.h"
 
 
-int commands(Queue* myqueue, char** tokenized);
+char* commands(Queue* myqueue, char** tokenized, char* unix_command);
 
-int jobExecutorServer(int fd, Queue* myqueue) {
-    
+char* jobExecutorServer(int fd, Queue* myqueue) {
+
     // read the number of arguments from jobCommander
     int amount;
     read(fd, &amount, sizeof(int));
@@ -48,11 +48,18 @@ int jobExecutorServer(int fd, Queue* myqueue) {
     //     printf("i = %s\n", tokenized[i]);
     // }
 
-    // print info
-    printf("String was successfully received and Tokenized!\n");
+    char buffer[total_len];
+    for (int i = 1 ; i < amount ; i++) {
+        if (i == 1) {
+            sprintf(buffer, "%s", tokenized[i]);
+        }
+        else {
+            sprintf(buffer, "%s %s", buffer, tokenized[i]);
+        }
+    }
 
     // find and exec command
-    commands(myqueue, tokenized);
+    char* message = commands(myqueue, tokenized, buffer);
 
     // free the memory of "tokenized"
     for (int i = 0; i < amount; i++) {
@@ -60,18 +67,22 @@ int jobExecutorServer(int fd, Queue* myqueue) {
             free(tokenized[i]);
         }
     }
+    
+    return message;
 }
 
-int issueJob(Queue* myqueue, char* job);
+Triplet* issueJob(Queue* myqueue, char* job);
 
-int commands(Queue* myqueue, char** tokenized) {
+char* commands(Queue* myqueue, char** tokenized, char* unix_command) {
     if (strcmp(tokenized[0], "issueJob" ) == 0) {
-        printf("Inside issueJob!\n");
-        issueJob(myqueue, tokenized[1]);
+
+        Triplet* returned_message = issueJob(myqueue, unix_command);
+        char* message = format_triplet(returned_message);
+        return message;
     }
 }
 
-int issueJob(Queue* myqueue, char* job) {
+Triplet* issueJob(Queue* myqueue, char* job) {
     int size = myqueue->size;
     int queuePosition = size;
     static int counter = 0;
@@ -82,7 +93,8 @@ int issueJob(Queue* myqueue, char* job) {
     // create a job Triplet for the queue
     Triplet* mytriplet = init_triplet(jobID, job, queuePosition);
     enqueue(myqueue, mytriplet);
-    print_queue_and_stats(myqueue);
+    // print_queue_and_stats(myqueue);
+    return mytriplet;
 }
 
 void signal_handler(int sig) {
@@ -98,22 +110,43 @@ int main() {
     fclose(job_ex_ser_txt);
 
     // create the Queue for the jobs
-    printf("Created the Queue for the jobs!\n");
     Queue* myqueue = createQueue();
 
-    // wait signal from jobCommander and then read from the pipe
-    int fd = open("comm", O_RDONLY);
+    // create the fifo for Server writing - Commander reading
+    mkfifo("server", 0666);
+    
+
+    // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading
+    int fd_commander = open("commander", O_RDONLY);
     signal(SIGUSR1, signal_handler);
     int exit = 0;
+    int msg_size;
     while (1) {
         pause();
         if (!exit) {
-            jobExecutorServer(fd, myqueue);
+            // read Commanders pid
+            int commander_pid;
+            read(fd_commander, &commander_pid, sizeof(int));
+            char* message = jobExecutorServer(fd_commander, myqueue);
+
+            // open the fifo for Server writing - Commander reading
+            int fd_server = open("server", O_WRONLY);
+
+            // write the size of the message (for the commander to see)
+            msg_size = sizeof(char)*(strlen(message)+1);
+            write(fd_server, &msg_size, sizeof(int));
+
+            // write the message
+            write(fd_server, message, msg_size);
+
+            // close server fifo (will reopen at then next command)
+            close(fd_server);
             // exit = 1;
         }
     }
 
-    close(fd);
+    close(fd_commander);
+    
 
     // delete jobExecutorServer.txt if exited
     int exited = 0;

@@ -9,6 +9,10 @@
 #include <signal.h>
 #include "queue.h"
 
+void signal_handler(int sig) {
+    // print info
+    printf("Commander got the signal from Server!\n");
+}
 
 int jobCommander(int argc, char *argv[]) {
 
@@ -23,11 +27,11 @@ int jobCommander(int argc, char *argv[]) {
             execvp(args[0], args);
         }
 
-        // create the fifo
-        mkfifo("comm", 0666);
+        // create the fifo for Commander writing - Server reading
+        mkfifo("commander", 0666);
 
         // print info
-        printf("Server was not active...\nServer activated and fifo pipe created!\n");
+        printf("Server was not active... Server activated!\n");
     }
     else {
         // file exists -> server is active, fifo already exists
@@ -39,11 +43,15 @@ int jobCommander(int argc, char *argv[]) {
     }
 
 
-    // open the fifo
-    int fd = open("comm", O_WRONLY);
+    // open the fifo for Commander writing - Server reading
+    int fd_commander = open("commander", O_WRONLY);
     
+    // write this process pid
+    int mypid = getpid();
+    write(fd_commander, &mypid, sizeof(int));
+
     // write the number of strings for the pipe
-    write(fd, &argc, sizeof(int));
+    write(fd_commander, &argc, sizeof(int));
 
     // write the total number of chars that will be in the pipe
     int total_len = 0;
@@ -52,20 +60,34 @@ int jobCommander(int argc, char *argv[]) {
     }
     total_len += argc - 1;     // add some extra chars for the " " between words
     total_len += total_len*0.1;     // add 10% extra chars for safety
-    write(fd, &total_len, sizeof(int));
+    write(fd_commander, &total_len, sizeof(int));
 
     // write the strings in the pipe
     for (int i = 1 ; i < argc ; i++) {
-        write(fd, argv[i], strlen(argv[i]));
-        write(fd, " ", 1);
+        write(fd_commander, argv[i], strlen(argv[i]));
+        write(fd_commander, " ", 1);
         // printf("Wrote: %s\n", argv[i]);
     }
+
 
     // give the signal to jocExecutorServer
     kill(p, SIGUSR1);
 
-    // close the fifo
-    close(fd);
+    // open the fifo for Server writing - Commander reading
+    int fd_server = open("server", O_RDONLY);
+
+    // read from Server the returned message
+    int msg_size;
+    read(fd_server, &msg_size, sizeof(int)); // read the size of the message
+    
+    char* message = (char*)malloc(sizeof(char)*msg_size);
+    read(fd_server, message, msg_size); // read the message
+    printf("Message received from the Server to the Commander: %s\n", message);
+    
+
+    // close the fifos
+    close(fd_commander);
+    close(fd_server);
 }
 
 

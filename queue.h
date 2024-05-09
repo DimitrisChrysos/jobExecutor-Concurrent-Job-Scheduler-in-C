@@ -56,5 +56,8 @@ Triplet* init_triplet(char* jobID, char* job, int queuePosition);
 // deleted a Triplet
 void delete_triplet(Triplet* mytriplet);
 
+// print a Triplet
+char* format_triplet(Triplet* mytriplet);
+
 // prints the whole queue and it's stats
 void print_queue_and_stats(Queue* myqueue);

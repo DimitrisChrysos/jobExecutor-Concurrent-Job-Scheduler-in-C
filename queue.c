@@ -109,6 +109,14 @@ void delete_triplet(Triplet* mytriplet) {
     free(mytriplet);
 }
 
+char* format_triplet(Triplet* mytriplet) {
+
+    int safe_amount_of_chars = (strlen(mytriplet->job) + strlen(mytriplet->jobID) + 10)*2;
+    char* buffer = (char*)malloc(sizeof(char)*(safe_amount_of_chars));
+    sprintf(buffer, "<%s,%s,%d>", mytriplet->jobID, mytriplet->job, mytriplet->queuePosition);
+    return buffer;
+}
+
 void print_queue_and_stats(Queue* myqueue) {
     printf("\n");
     if (queue_empty(*myqueue)) {
