@@ -112,7 +112,7 @@ void jobExecutorServer() {
 
 Triplet* issueJob(char* job);
 
-void stop_job(char** tokenized);
+char* stop_job(char** tokenized);
 
 char* commands(char** tokenized, char* unix_command) {
     if (strcmp(tokenized[0], "issueJob" ) == 0) {
@@ -127,12 +127,12 @@ char* commands(char** tokenized, char* unix_command) {
     }
     else if (strcmp(tokenized[0], "stop" ) == 0) {
         
-        stop_job(tokenized);
-        return "-1"; 
+        char* message = stop_job(tokenized);
+        return message; 
     }
 }
 
-void stop_job(char** tokenized) {
+char* stop_job(char** tokenized) {
     char* jobID = tokenized[1];
     
     // Check if the process with jobID is currently running
@@ -154,6 +154,7 @@ void stop_job(char** tokenized) {
     // running queue (also deallocate the memory for the node)
     // else remove it from the main queue
     Triplet* tempTriplet;
+    char* buffer = (char*)malloc(sizeof(char)*(strlen(jobID)+30));
     if (running) {
         if (temp_node->parent != NULL) {
             temp_node->parent->child = temp_node->child;
@@ -175,6 +176,8 @@ void stop_job(char** tokenized) {
             delete_triplet(tempTriplet);
             free(temp_node);
         }
+        sprintf(buffer, "%s terminated", jobID);
+        return buffer;
     }
     else {
         // Check if the process with jobID is waiting
@@ -212,8 +215,12 @@ void stop_job(char** tokenized) {
                 delete_triplet(tempTriplet);
                 free(temp_node);
             }
+            sprintf(buffer, "%s removed", jobID);
+            return buffer;
         }
     }
+    sprintf(buffer, "%s not found", jobID);
+    return buffer;
 }
 
 void exec_commands_in_queue(int sig) {
