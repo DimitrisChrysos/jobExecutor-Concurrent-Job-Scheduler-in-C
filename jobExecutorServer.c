@@ -228,7 +228,8 @@ void exec_commands_in_queue(int sig) {
     // this means, that the function was called because an old process ended
     // so we need to remove the first item from the running queue
     if (sig == SIGCHLD) {
-        dequeue(info->running_queue);
+        Triplet* removed = dequeue(info->running_queue);
+        delete_triplet(removed);
     }
 
     // printf("info->myqueue->size = %d\n", info->myqueue->size);
@@ -262,15 +263,11 @@ void exec_commands_in_queue(int sig) {
             amount++;
             
             // tokenize the string "job" using "amount + 1" for the tokenized array to end with NULL
-            char** tokenized = (char **)malloc((amount+1)*sizeof(char*));   
-            printf("IM HERE || job = %s || total_len = %d || amount = %d\n", job, total_len, amount);
+            char** tokenized = (char **)malloc((amount+1)*sizeof(char*));
             for (int i = 0 ; i < amount ; i++) {
-                printf("i = %d\n", i);
                 tokenized[i] = (char*)malloc((total_len+1) * sizeof(char));
-                printf("->>>>>\n");
             }
             tokenized[amount] = NULL;
-            printf("IM HERE\n");
             char* tok = strtok(job, " ");
             int count = 0;
             while (tok != NULL) {
@@ -312,7 +309,7 @@ void exec_commands_in_queue(int sig) {
                 execvp(tokenized[0], tokenized);
             }
 
-            printf("parent pid: %d | child pid: %d\n", getpid(), pid);
+            // printf("parent pid: %d | child pid: %d\n", getpid(), pid);
             
             // add the pid of the process to the triplet (usefull to terminate the process)
             removed_triplet->pid = pid;
