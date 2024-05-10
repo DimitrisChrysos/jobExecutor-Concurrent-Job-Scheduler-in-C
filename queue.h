@@ -48,10 +48,11 @@ typedef struct triplet {
     char* jobID;
     char* job;
     int queuePosition;
+    int pid;
 } Triplet;
 
 // initalizes a Triplet
-Triplet* init_triplet(char* jobID, char* job, int queuePosition);
+Triplet* init_triplet(char* jobID, char* job, int queuePosition, int pid);
 
 // deleted a Triplet
 void delete_triplet(Triplet* mytriplet);

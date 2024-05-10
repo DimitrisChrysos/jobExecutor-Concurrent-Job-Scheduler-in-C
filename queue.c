@@ -95,17 +95,20 @@ int queue_size(Queue myqueue) {
 
 // for Triplets
 
-Triplet* init_triplet(char* jobID, char* job, int queuePosition) {
+Triplet* init_triplet(char* jobID, char* job, int queuePosition, int pid) {
     Triplet* mytriplet = (Triplet*)malloc(sizeof(Triplet));
     mytriplet->jobID = (char*)malloc(strlen(jobID) + 1);
     strcpy(mytriplet->jobID, jobID);
     mytriplet->job = (char*)malloc(strlen(job) + 1);
     strcpy(mytriplet->job, job);
     mytriplet->queuePosition = queuePosition;
+    mytriplet->pid = pid;
     return mytriplet;
 }
 
 void delete_triplet(Triplet* mytriplet) {
+    free(mytriplet->jobID);
+    free(mytriplet->job);
     free(mytriplet);
 }
 

@@ -74,7 +74,6 @@ void jobExecutorServer() {
     
     // find and exec commands
     char* message = commands(tokenized, buffer);
-    printf("message: %s\n", message);
 
     // free the memory of "tokenized"
     for (int i = 0; i < amount; i++) {
@@ -101,16 +100,19 @@ void jobExecutorServer() {
 
         // write the message
         write(fd_server, message, msg_size);
+    
+        // free the memory for message
+        free(message);
     }
 
-    // free the memory for message
-    free(message);
 
     // close server fifo (will reopen at then next command)
     close(fd_server);
 }
 
 Triplet* issueJob(char* job);
+
+void stop_job(char** tokenized);
 
 char* commands(char** tokenized, char* unix_command) {
     if (strcmp(tokenized[0], "issueJob" ) == 0) {
@@ -124,12 +126,103 @@ char* commands(char** tokenized, char* unix_command) {
         return "-1";    // to not send an actual message back to the Commander 
     }
     else if (strcmp(tokenized[0], "stop" ) == 0) {
-
         
+        stop_job(tokenized);
+        return "-1"; 
     }
 }
 
-void exec_commands_in_queue() {
+void stop_job(char** tokenized) {
+    char* jobID = tokenized[1];
+    
+    // Check if the process with jobID is currently running
+    int running = 0;
+    int qSize = info->running_queue->size;
+    Node* temp_node = info->running_queue->first_node;
+    for (int i = 0 ; i < qSize ; i++) {
+        Triplet* tempTriplet = temp_node->value;
+        if (strcmp(tempTriplet->jobID, jobID) == 0) {
+            running = 1;
+            break;
+        }
+        temp_node = temp_node->child;
+    }
+    
+    // print_queue_and_stats(info->running_queue);
+
+    // if found currently running, terminate the process and remove it from the
+    // running queue (also deallocate the memory for the node)
+    // else remove it from the main queue
+    Triplet* tempTriplet;
+    if (running) {
+        if (temp_node->parent != NULL) {
+            temp_node->parent->child = temp_node->child;
+            tempTriplet = temp_node->value;
+            kill(tempTriplet->pid, SIGTERM);
+            delete_triplet(tempTriplet);
+            free(temp_node);
+        }
+        else if (temp_node->child == NULL) {
+            tempTriplet = dequeue(info->running_queue);
+            kill(tempTriplet->pid, SIGTERM);
+            delete_triplet(tempTriplet);
+        }
+        else {
+            info->running_queue->first_node = temp_node;
+            temp_node->child->parent = NULL;
+            tempTriplet = temp_node->value;
+            kill(tempTriplet->pid, SIGTERM);
+            delete_triplet(tempTriplet);
+            free(temp_node);
+        }
+    }
+    else {
+        // Check if the process with jobID is waiting
+        int waiting = 0;
+        int qSize = info->myqueue->size;
+        Node* temp_node = info->myqueue->first_node;
+        for (int i = 0 ; i < qSize ; i++) {
+            Triplet* tempTriplet = temp_node->value;
+            if (strcmp(tempTriplet->jobID, jobID) == 0) {
+                waiting = 1;
+                break;
+            }
+            temp_node = temp_node->child;
+        }
+
+        // if it's waiting, remove it from myqueue
+        if (waiting) {
+            if (temp_node->parent != NULL) {
+                temp_node->parent->child = temp_node->child;
+                tempTriplet = temp_node->value;
+                kill(tempTriplet->pid, SIGTERM);
+                delete_triplet(tempTriplet);
+                free(temp_node);
+            }
+            else if (temp_node->child == NULL) {
+                tempTriplet = dequeue(info->myqueue);
+                kill(tempTriplet->pid, SIGTERM);
+                delete_triplet(tempTriplet);
+            }
+            else {
+                info->myqueue->first_node = temp_node;
+                temp_node->child->parent = NULL;
+                tempTriplet = temp_node->value;
+                kill(tempTriplet->pid, SIGTERM);
+                delete_triplet(tempTriplet);
+                free(temp_node);
+            }
+        }
+    }
+}
+
+void exec_commands_in_queue(int sig) {
+
+    // this means, that the function was called because an old process ended
+    // so we need to remove the first item from the running queue
+    if (sig == SIGCHLD) {
+        dequeue(info->running_queue);
+    }
 
     // printf("info->myqueue->size = %d\n", info->myqueue->size);
 
@@ -162,10 +255,15 @@ void exec_commands_in_queue() {
             amount++;
             
             // tokenize the string "job" using "amount + 1" for the tokenized array to end with NULL
-            char** tokenized = (char **)malloc((amount+1) * sizeof(char*));   
+            char** tokenized = (char **)malloc((amount+1)*sizeof(char*));   
+            printf("IM HERE || job = %s || total_len = %d || amount = %d\n", job, total_len, amount);
             for (int i = 0 ; i < amount ; i++) {
-                tokenized[i] = malloc(total_len * sizeof(char));
-            } 
+                printf("i = %d\n", i);
+                tokenized[i] = (char*)malloc((total_len+1) * sizeof(char));
+                printf("->>>>>\n");
+            }
+            tokenized[amount] = NULL;
+            printf("IM HERE\n");
             char* tok = strtok(job, " ");
             int count = 0;
             while (tok != NULL) {
@@ -178,14 +276,15 @@ void exec_commands_in_queue() {
             }
             tokenized[amount] = NULL;
             
+
             // remove the front process from the queue and add it to the running_queue
             Triplet* removed_triplet = dequeue(info->myqueue);
             enqueue(info->running_queue, removed_triplet);
 
-            // for test purposes (to delete later)
-            char* temp_triplet = format_triplet(removed_triplet);
-            printf("triplet string: %s\n", temp_triplet);
-            free(temp_triplet);
+            // // for test purposes (to delete later)
+            // char* temp_triplet = format_triplet(removed_triplet);
+            // printf("triplet string: %s\n", temp_triplet);
+            // free(temp_triplet);
 
             // and replace the queuePosition for every item of the main queue
             int qSize = info->myqueue->size;
@@ -193,19 +292,26 @@ void exec_commands_in_queue() {
             for (int i = 0 ; i < qSize ; i++) {
                 Triplet* tempTriplet = temp_node->value;
                 tempTriplet->queuePosition = i;
+                temp_node = temp_node->child;
             }
             
             // create a new process and replace it using execvp 
             // to execute the wanted process
             pid_t pid = fork();
             if (pid == 0) { // child process
+                // printf("child pid = %d\n", getpid());
 
                 // execute the wanted process
                 execvp(tokenized[0], tokenized);
             }
+
+            printf("parent pid: %d | child pid: %d\n", getpid(), pid);
+            
+            // add the pid of the process to the triplet (usefull to terminate the process)
+            removed_triplet->pid = pid;
             
             // free the memory of "tokenized"
-            for (int i = 0; i < amount; i++) {
+            for (int i = 0; i < amount + 1; i++) {
                 if (tokenized[i] != NULL) {
                     free(tokenized[i]);
                 }
@@ -225,12 +331,14 @@ Triplet* issueJob(char* job) {
     sprintf(jobID, "job_%d", counter);
 
     // create a job Triplet for the queue
-    Triplet* mytriplet = init_triplet(jobID, job, queuePosition);
+    Triplet* mytriplet = init_triplet(jobID, job, queuePosition, -1);
     enqueue(info->myqueue, mytriplet);
+    
     // print_queue_and_stats(myqueue);
 
     // run the commands, if possible
-    exec_commands_in_queue();
+    exec_commands_in_queue(-1);
+    
 
     return mytriplet;
 }
@@ -282,10 +390,12 @@ int main() {
     sigaction(SIGCHLD, &child_act, NULL);
 
 
-    // pause the process after every signal inside a while loop, to keep the server open
+    // keep the server open
     while (1) {
         // pause();
         waitpid(0, NULL, WNOHANG);
+        // printf("child_pd = %d\n", child_pid);
+        // printf("myqueue_size = %d | running_queue_size = %d\n", info->myqueue->size, info->running_queue->size);
     }
 
     // close the fifo pipe for Commander writing - Server reading 
