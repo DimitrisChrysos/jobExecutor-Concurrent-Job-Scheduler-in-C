@@ -23,7 +23,7 @@ int jobCommander(int argc, char *argv[]) {
         // file does not exist -> server is not active, activate the server
         p = fork();
         if (p == 0) {   // child process
-            char *args[]={"./jobExecutorServerV2", NULL};
+            char *args[]={"./jobExecutorServer", NULL};
             execvp(args[0], args);
         }
 
