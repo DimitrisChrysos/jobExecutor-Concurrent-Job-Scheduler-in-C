@@ -23,7 +23,7 @@ int jobCommander(int argc, char *argv[]) {
         // file does not exist -> server is not active, activate the server
         p = fork();
         if (p == 0) {   // child process
-            char *args[]={"./jobExecutorServer", NULL};
+            char *args[]={"./jobExecutorServerV2", NULL};
             execvp(args[0], args);
         }
 
@@ -45,10 +45,6 @@ int jobCommander(int argc, char *argv[]) {
 
     // open the fifo for Commander writing - Server reading
     int fd_commander = open("commander", O_WRONLY);
-    
-    // write this process pid
-    int mypid = getpid();
-    write(fd_commander, &mypid, sizeof(int));
 
     // write the number of strings for the pipe
     write(fd_commander, &argc, sizeof(int));
@@ -77,12 +73,14 @@ int jobCommander(int argc, char *argv[]) {
     int fd_server = open("server", O_RDONLY);
 
     // read from Server the returned message
+    // if msg_size == -1, there is no actual message send
     int msg_size;
     read(fd_server, &msg_size, sizeof(int)); // read the size of the message
-    
-    char* message = (char*)malloc(sizeof(char)*msg_size);
-    read(fd_server, message, msg_size); // read the message
-    printf("Message received from the Server to the Commander: %s\n", message);
+    if (msg_size != -1) {
+        char* message = (char*)malloc(sizeof(char)*msg_size);
+        read(fd_server, message, msg_size); // read the message
+        printf("Message received from the Server to the Commander: %s\n", message);
+    }
     
 
     // close the fifos
