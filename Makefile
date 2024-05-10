@@ -1,6 +1,6 @@
 jobCommander:
 	gcc -o jobCommander jobCommander.c queue.c
-	gcc -o jobExecutorServer jobExecutorServer.c queue.c
+	gcc -o jobExecutorServer jobExecutorServer.c queue.c ServerCommands.c
 
 clean:
 	rm -f jobCommander

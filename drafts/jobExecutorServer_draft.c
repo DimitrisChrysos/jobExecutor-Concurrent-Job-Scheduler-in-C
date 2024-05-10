@@ -165,7 +165,7 @@ Triplet* issueJob(Queue* myqueue, char* job, int* concurrency, int* active_proce
     sprintf(jobID, "job_%d", counter);
 
     // create a job Triplet for the queue
-    Triplet* mytriplet = init_triplet(jobID, job, queuePosition);
+    Triplet* mytriplet = init_triplet(jobID, job, queuePosition, -1);
     enqueue(myqueue, mytriplet);
     // print_queue_and_stats(myqueue);
 

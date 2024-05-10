@@ -10,11 +10,11 @@ int main() {
     Queue* myqueue = createQueue();
 
     printf("Insert mytriplet at the Queue!\n");
-    Triplet* mytriplet = init_triplet("job_1", "wget", 2);
+    Triplet* mytriplet = init_triplet("job_1", "wget", 2, -1);
     enqueue(myqueue, mytriplet);
 
     printf("Insert mytriplet1 at the Queue!\n");
-    Triplet* mytriplet1 = init_triplet("job_2", "ls", 123);
+    Triplet* mytriplet1 = init_triplet("job_2", "ls", 123, -1);
     enqueue(myqueue, mytriplet1);
 
 
