@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -15,6 +16,7 @@ typedef struct server_info {
     Queue* myqueue;
     int concurrency;
     int active_processes;
+    Queue* running_queue;
 } ServerInfo;
 
 ServerInfo *info;
@@ -101,6 +103,9 @@ void jobExecutorServer() {
         write(fd_server, message, msg_size);
     }
 
+    // free the memory for message
+    free(message);
+
     // close server fifo (will reopen at then next command)
     close(fd_server);
 }
@@ -125,53 +130,85 @@ char* commands(char** tokenized, char* unix_command) {
 }
 
 void exec_commands_in_queue() {
-    if (info->active_processes < info->concurrency) {
-        
-        // get the first process "job" of the queue to be executed
-        Triplet* mytriplet = info->myqueue->first_node->value;
-        int len = strlen(mytriplet->job);
-        char job[len];
-        strcpy(job, mytriplet->job);
 
-        // find the "amount" of words in the "job" to be executed
-        int amount = 0;
-        int total_len = strlen(job) + 1;
-        for (int i = 0 ; i < total_len ; i++) {
-            if (job[i] == ' ') {
-                amount++;
-            } 
-        }
-        amount++;
+    // printf("info->myqueue->size = %d\n", info->myqueue->size);
+
+    if (info->active_processes < info->concurrency && info->myqueue->size != 0) {
         
-        // tokenize the string "job" using "amount + 1" for the tokenized array to end with NULL
-        char** tokenized = (char **)malloc((amount+1) * sizeof(char*));   
-        for (int i = 0 ; i < amount ; i++) {
-            tokenized[i] = malloc(total_len * sizeof(char));
-        } 
-        char* tok = strtok(job, " ");
-        int count = 0;
-        while (tok != NULL) {
-            if (count == amount) {
+        // execute processes until capacity (info->concurrency) reached
+        for (int i = info->active_processes ; i < info->concurrency ; i++) {
+
+            // Check if there are no processes left
+            if (info->myqueue->size == 0) {
                 break;
             }
-            strcpy(tokenized[count], tok);
-            tok = strtok(NULL, " ");
-            count++;
-        }
-        tokenized[amount] = NULL;
-        
-        // create a new process and replace it using execvp 
-        // to execute the wanted process
-        pid_t pid = fork();
-        if (pid == 0) { // child process
-            // char *args[]={job, NULL};
-            execvp(tokenized[0], tokenized);
-        }
-        
-        // free the memory of "tokenized"
-        for (int i = 0; i < amount; i++) {
-            if (tokenized[i] != NULL) {
-                free(tokenized[i]);
+            // sleep(1);
+
+            // get the first process "job" of the queue to be executed
+            Triplet* mytriplet = info->myqueue->first_node->value;
+            int len = strlen(mytriplet->job);
+            char job[len];
+            strcpy(job, mytriplet->job);
+            
+
+            // find the "amount" of words in the "job" to be executed
+            int amount = 0;
+            int total_len = strlen(job) + 1;
+            for (int i = 0 ; i < total_len ; i++) {
+                if (job[i] == ' ') {
+                    amount++;
+                } 
+            }
+            amount++;
+            
+            // tokenize the string "job" using "amount + 1" for the tokenized array to end with NULL
+            char** tokenized = (char **)malloc((amount+1) * sizeof(char*));   
+            for (int i = 0 ; i < amount ; i++) {
+                tokenized[i] = malloc(total_len * sizeof(char));
+            } 
+            char* tok = strtok(job, " ");
+            int count = 0;
+            while (tok != NULL) {
+                if (count == amount) {
+                    break;
+                }
+                strcpy(tokenized[count], tok);
+                tok = strtok(NULL, " ");
+                count++;
+            }
+            tokenized[amount] = NULL;
+            
+            // remove the front process from the queue and add it to the running_queue
+            Triplet* removed_triplet = dequeue(info->myqueue);
+            enqueue(info->running_queue, removed_triplet);
+
+            // for test purposes (to delete later)
+            char* temp_triplet = format_triplet(removed_triplet);
+            printf("triplet string: %s\n", temp_triplet);
+            free(temp_triplet);
+
+            // and replace the queuePosition for every item of the main queue
+            int qSize = info->myqueue->size;
+            Node* temp_node = info->myqueue->first_node;
+            for (int i = 0 ; i < qSize ; i++) {
+                Triplet* tempTriplet = temp_node->value;
+                tempTriplet->queuePosition = i;
+            }
+            
+            // create a new process and replace it using execvp 
+            // to execute the wanted process
+            pid_t pid = fork();
+            if (pid == 0) { // child process
+
+                // execute the wanted process
+                execvp(tokenized[0], tokenized);
+            }
+            
+            // free the memory of "tokenized"
+            for (int i = 0; i < amount; i++) {
+                if (tokenized[i] != NULL) {
+                    free(tokenized[i]);
+                }
             }
         }
     }
@@ -214,6 +251,9 @@ int main() {
     // create the Queue for the jobs
     Queue* myqueue = createQueue();
 
+    // create the running Queue for the processes (jobs), that are currently running
+    Queue* running_queue = createQueue();
+
     // create the fifo for Server writing - Commander reading
     mkfifo("server", 0666);
 
@@ -221,15 +261,31 @@ int main() {
     int fd_commander = open("commander", O_RDONLY);
 
     // Init the ServerInfo struct and set the global pointer
-    ServerInfo myServerInfo = {fd_commander, myqueue, 1, 0};
+    ServerInfo myServerInfo = {fd_commander, myqueue, 1, 0, running_queue};
     info = &myServerInfo;
 
     // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading
     signal(SIGUSR1, jobExecutorServer);
+    // struct sigaction commander;
+    // commander.sa_handler = jobExecutorServer;
+    // sigemptyset(&commander.sa_mask);
+    // commander.sa_flags = 0;
+    // sigaction(SIGUSR1, &commander, NULL);
+
+    
+    // // wait signal from a child process 
+    // signal(SIGCHLD, exec_commands_in_queue);
+    struct sigaction child_act;
+    child_act.sa_handler = exec_commands_in_queue;
+    sigemptyset(&child_act.sa_mask);
+    child_act.sa_flags = 0;
+    sigaction(SIGCHLD, &child_act, NULL);
+
 
     // pause the process after every signal inside a while loop, to keep the server open
     while (1) {
-        pause();
+        // pause();
+        waitpid(0, NULL, WNOHANG);
     }
 
     // close the fifo pipe for Commander writing - Server reading 

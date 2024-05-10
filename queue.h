@@ -27,7 +27,7 @@ void set_node(Node* new_node, void* value, Node* parent);
 // returns 1 if added to queue successfully, returns -1 if not
 int enqueue(Queue* myqueue, void* value);
 
-// returns 1 if successfully removed
+// returns the value of the node if successfully removed
 void* dequeue(Queue* myqueue);
 
 // returns the first node added to the queue
@@ -56,7 +56,7 @@ Triplet* init_triplet(char* jobID, char* job, int queuePosition);
 // deleted a Triplet
 void delete_triplet(Triplet* mytriplet);
 
-// print a Triplet
+// format a Triplet as a string, (memory deallocation is needed!)
 char* format_triplet(Triplet* mytriplet);
 
 // prints the whole queue and it's stats
