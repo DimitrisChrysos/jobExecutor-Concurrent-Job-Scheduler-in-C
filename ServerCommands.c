@@ -18,7 +18,10 @@ char* commands(char** tokenized, char* unix_command) {
     }
     else if (strcmp(tokenized[0], "setConcurrency" ) == 0) {
 
+        // printf("before concur = %d\n", info->concurrency);
         info->concurrency = atoi(tokenized[1]);
+        exec_commands_in_queue(-1);
+        // printf("concur = %d\n", info->concurrency);
         return "-1";    // to not send an actual message back to the Commander 
     }
     else if (strcmp(tokenized[0], "stop" ) == 0) {
@@ -46,10 +49,10 @@ void signal_handerUSR2(int sig) {}
 void exec_commands_in_queue(int sig) {
 
     // If queued processes exist execute them, until we reach the concurrency limit
-    if (info->active_processes < info->concurrency && info->myqueue->size != 0) {
+    if (info->running_queue->size < info->concurrency && info->myqueue->size != 0) {
         
         // execute processes until capacity (info->concurrency) reached
-        for (int i = info->active_processes ; i < info->concurrency ; i++) {
+        for (int i = info->running_queue->size ; i < info->concurrency ; i++) {
 
             // Check if there are no processes left
             if (info->myqueue->size == 0)

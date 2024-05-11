@@ -120,7 +120,7 @@ int main() {
     int fd_commander = open("commander", O_RDONLY);
 
     // Init the ServerInfo struct and set the global pointer
-    ServerInfo myServerInfo = {fd_commander, myqueue, 1, 0, running_queue, 1};
+    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1};
     info = &myServerInfo;
 
     // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading

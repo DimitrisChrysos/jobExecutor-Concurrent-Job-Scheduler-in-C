@@ -5,7 +5,7 @@ typedef struct server_info {
     int fd_commander;
     Queue* myqueue;
     int concurrency;
-    int active_processes;
+    // int active_processes;
     Queue* running_queue;
     int open;
 } ServerInfo;
