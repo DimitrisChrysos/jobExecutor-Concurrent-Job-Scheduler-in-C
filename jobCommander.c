@@ -30,16 +30,16 @@ int jobCommander(int argc, char *argv[]) {
         // create the fifo for Commander writing - Server reading
         mkfifo("commander", 0666);
 
-        // print info
-        printf("Server was not active... Server activated!\n");
+        // // print info
+        // printf("Server was not active... Server activated!\n");
     }
     else {
         // file exists -> server is active, fifo already exists
         fscanf(myfile, "%d", &p);
         fclose(myfile);
 
-        // print info
-        printf("Server is active!\n");
+        // // print info
+        // printf("Server is active!\n");
     }
 
 
@@ -53,18 +53,21 @@ int jobCommander(int argc, char *argv[]) {
     int total_len = 0;
     for (int i = 1 ; i < argc ; i++) {
         total_len += strlen(argv[i]);
+        // printf("argv[%d] = %s\n", i, argv[i]);
     }
-    total_len += argc - 1;     // add some extra chars for the " " between words
+    total_len += total_len;     // add some extra chars for the " " between words
     total_len += total_len*0.1;     // add 10% extra chars for safety
     write(fd_commander, &total_len, sizeof(int));
 
+    printf("I arrived here! total_len = %d, argc = %d\n", total_len, argc);
     // write the strings in the pipe
     for (int i = 1 ; i < argc ; i++) {
+        printf("i = %d, total_len = %d, argc = %d\n", i, total_len, argc);
         write(fd_commander, argv[i], strlen(argv[i]));
         write(fd_commander, " ", 1);
         // printf("Wrote: %s\n", argv[i]);
     }
-
+    printf("I arrived here!\n");
 
     // give the signal to jocExecutorServer
     kill(p, SIGUSR1);
@@ -79,7 +82,8 @@ int jobCommander(int argc, char *argv[]) {
     if (msg_size != -1) {
         char* message = (char*)malloc(sizeof(char)*msg_size);
         read(fd_server, message, msg_size); // read the message
-        printf("Message received from the Server to the Commander: %s\n", message);
+        // printf("Message received from the Server to the Commander: %s\n", message); // print the message
+        printf("%s\n", message); // print the message
     }
     
 
