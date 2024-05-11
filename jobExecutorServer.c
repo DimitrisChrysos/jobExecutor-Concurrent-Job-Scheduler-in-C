@@ -14,7 +14,6 @@
 ServerInfo *info;
 
 void jobExecutorServer() {
-
     
     // read the number of arguments from jobCommander
     int amount;
@@ -45,11 +44,6 @@ void jobExecutorServer() {
         count++;
     }
 
-    // // print the tokens of the string (TODO: delete the prints)
-    // for (int i = 0 ; i < amount ; i++) {
-    //     printf("i = %s\n", tokenized[i]);
-    // }
-
     // create a buffer to save the whole unix_command from the tokens
     char buffer[total_len];
     for (int i = 1 ; i < amount ; i++) {
@@ -60,7 +54,6 @@ void jobExecutorServer() {
             sprintf(buffer, "%s %s", buffer, tokenized[i]);
         }
     }
-
     
     // find and exec commands
     char* message = commands(tokenized, buffer);
@@ -71,8 +64,6 @@ void jobExecutorServer() {
             free(tokenized[i]);
         }
     }
-    
-    // return message;
 
     // open the fifo for Server writing - Commander reading
     int fd_server = open("server", O_WRONLY);
@@ -95,8 +86,7 @@ void jobExecutorServer() {
         free(message);
     }
 
-
-    // close server fifo (will reopen at then next command)
+    // close server fifo (will re-open at then next command)
     close(fd_server);
 }
 
@@ -104,8 +94,9 @@ void jobExecutorServer() {
 
 
 
+// create jobExecutorServer.txt
 void create_jobExecutorServerTEXT() {
-    // create jobExecutorServer.txt
+    
     FILE *job_ex_ser_txt = fopen("jobExecutorServer.txt", "w");
     pid_t pid = getpid();
     fprintf(job_ex_ser_txt, "%d", pid);
@@ -129,43 +120,50 @@ int main() {
     int fd_commander = open("commander", O_RDONLY);
 
     // Init the ServerInfo struct and set the global pointer
-    ServerInfo myServerInfo = {fd_commander, myqueue, 1, 0, running_queue};
+    ServerInfo myServerInfo = {fd_commander, myqueue, 1, 0, running_queue, 1};
     info = &myServerInfo;
 
     // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading
     signal(SIGUSR1, jobExecutorServer);
-    // struct sigaction commander;
-    // commander.sa_handler = jobExecutorServer;
-    // sigemptyset(&commander.sa_mask);
-    // commander.sa_flags = 0;
-    // sigaction(SIGUSR1, &commander, NULL);
-
     
-    // // wait signal from a child process 
-    // signal(SIGCHLD, exec_commands_in_queue);
+    // wait signal from a child process
     struct sigaction child_act;
     child_act.sa_handler = exec_commands_in_queue;
     sigemptyset(&child_act.sa_mask);
     child_act.sa_flags = 0;
     sigaction(SIGCHLD, &child_act, NULL);
 
-
     // keep the server open
-    while (1) {
-        // pause();
+    while (info->open) {
         waitpid(0, NULL, WNOHANG);
-        // printf("child_pd = %d\n", child_pid);
-        // printf("myqueue_size = %d | running_queue_size = %d\n", info->myqueue->size, info->running_queue->size);
     }
 
     // close the fifo pipe for Commander writing - Server reading 
     close(fd_commander);
     
+    // remove jobExecutorServer.txt
+    remove("jobExecutorServer.txt");
 
-    // delete jobExecutorServer.txt if exited
-    // TODO: also need to figure out how to free the memory from the Triplets!
-    int exited = 0;
-    if (exited) {
-        remove("jobExecutorServer.txt");
+    // free the memory from the Triplets - Queues!
+    if (info->myqueue->size > 0) {  // free the memory from the main queue
+        int qSize = info->myqueue->size;
+        Node* temp_node = info->myqueue->first_node;
+        for (int i = 0 ; i < qSize ; i++) {
+            Triplet* tempTriplet = temp_node->value;
+            delete_triplet(tempTriplet);
+            temp_node = temp_node->child;
+        }
     }
+    deleteQueue(info->myqueue);
+
+    if (info->running_queue->size > 0) {    // free the memory from the running queue
+        int qSize = info->running_queue->size;
+        Node* temp_node = info->running_queue->first_node;
+        for (int i = 0 ; i < qSize ; i++) {
+            Triplet* tempTriplet = temp_node->value;
+            delete_triplet(tempTriplet);
+            temp_node = temp_node->child;
+        }
+    }
+    deleteQueue(info->running_queue);
 }

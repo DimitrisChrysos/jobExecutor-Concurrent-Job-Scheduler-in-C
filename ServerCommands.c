@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-// #include "queue.h"
 #include "ServerCommands.h"
 
 char* commands(char** tokenized, char* unix_command) {
@@ -29,40 +28,43 @@ char* commands(char** tokenized, char* unix_command) {
     }
     else if (strcmp(tokenized[0], "poll" ) == 0) {
         
-        // TODO: read what is needed and write the code...!
         char* message = poll(tokenized);
         return message; 
+    }
+    else if (strcmp(tokenized[0], "exit" ) == 0) {
+        
+        info->open = 0; // close the server 
+        char buf[] = "jobExecutorServer terminated";
+        char* message = (char*)malloc(sizeof(char)*(strlen(buf) + 1));
+        strcpy(message, buf);
+        return message;
     }
 }
 
 void exec_commands_in_queue(int sig) {
 
-    // this means, that the function was called because an old process ended
+    // signal "SIGCHLD", means, that the function was called because an old process ended
     // so we need to remove the first item from the running queue
     if (sig == SIGCHLD) {
         Triplet* removed = dequeue(info->running_queue);
         delete_triplet(removed);
     }
 
-    // printf("info->myqueue->size = %d\n", info->myqueue->size);
-
+    // If queued processes exist execute them, until we reach the concurrency limit
     if (info->active_processes < info->concurrency && info->myqueue->size != 0) {
         
         // execute processes until capacity (info->concurrency) reached
         for (int i = info->active_processes ; i < info->concurrency ; i++) {
 
             // Check if there are no processes left
-            if (info->myqueue->size == 0) {
+            if (info->myqueue->size == 0)
                 break;
-            }
-            // sleep(1);
 
             // get the first process "job" of the queue to be executed
             Triplet* mytriplet = info->myqueue->first_node->value;
             int len = strlen(mytriplet->job);
             char job[len];
             strcpy(job, mytriplet->job);
-            
 
             // find the "amount" of words in the "job" to be executed
             int amount = 0;
@@ -97,12 +99,7 @@ void exec_commands_in_queue(int sig) {
             Triplet* removed_triplet = dequeue(info->myqueue);
             enqueue(info->running_queue, removed_triplet);
 
-            // // for test purposes (to delete later)
-            // char* temp_triplet = format_triplet(removed_triplet);
-            // printf("triplet string: %s\n", temp_triplet);
-            // free(temp_triplet);
-
-            // and replace the queuePosition for every item of the main queue
+            // fix the queuePosition for every item of the main queue 
             int qSize = info->myqueue->size;
             Node* temp_node = info->myqueue->first_node;
             for (int i = 0 ; i < qSize ; i++) {
@@ -111,17 +108,13 @@ void exec_commands_in_queue(int sig) {
                 temp_node = temp_node->child;
             }
             
-            // create a new process and replace it using execvp 
-            // to execute the wanted process
+            // create a new process and replace it using execvp with the wanted process
             pid_t pid = fork();
             if (pid == 0) { // child process
-                // printf("child pid = %d\n", getpid());
 
                 // execute the wanted process
                 execvp(tokenized[0], tokenized);
             }
-
-            // printf("parent pid: %d | child pid: %d\n", getpid(), pid);
             
             // add the pid of the process to the triplet (usefull to terminate the process)
             removed_triplet->pid = pid;
@@ -149,12 +142,9 @@ Triplet* issueJob(char* job) {
     // create a job Triplet for the queue
     Triplet* mytriplet = init_triplet(jobID, job, queuePosition, -1);
     enqueue(info->myqueue, mytriplet);
-    
-    // print_queue_and_stats(myqueue);
 
     // run the commands, if possible
     exec_commands_in_queue(-1);
-    
 
     return mytriplet;
 }
@@ -174,12 +164,11 @@ char* stop_job(char** tokenized) {
         }
         temp_node = temp_node->child;
     }
-    
-    // print_queue_and_stats(info->running_queue);
 
     // if found currently running, terminate the process and remove it from the
     // running queue (also deallocate the memory for the node)
-    // else remove it from the main queue
+    // else if inside the main queue, remove it from the main queue
+    // else return jobID not found...
     Triplet* tempTriplet;
     char* buffer = (char*)malloc(sizeof(char)*(strlen(jobID)+30));
     if (running) {
@@ -246,15 +235,15 @@ char* stop_job(char** tokenized) {
             return buffer;
         }
     }
-    sprintf(buffer, "%s not found", jobID);
+    sprintf(buffer, "%s not found...", jobID);
     return buffer;
 }
 
 char* poll(char** tokenized) {
     char* type = tokenized[1];
 
+    // find which queue is wanted
     Queue* myqueue;
-    
     if (strcmp(type, "running") == 0) {
         myqueue = info->running_queue;
         if (myqueue->size == 0) {
