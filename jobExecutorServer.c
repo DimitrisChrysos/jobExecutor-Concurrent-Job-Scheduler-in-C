@@ -91,7 +91,7 @@ void jobExecutorServer() {
 }
 
 
-
+void remove_pid_from_run_queue(pid_t mypid);
 
 
 // create jobExecutorServer.txt
@@ -135,7 +135,12 @@ int main() {
 
     // keep the server open
     while (info->open) {
-        waitpid(0, NULL, WNOHANG);
+        int child_pid = waitpid(0, NULL, WNOHANG);
+
+        if (child_pid != 0 && child_pid != -1) {
+            // printf("******************************** child_pid = %d\n", child_pid);
+            remove_pid_from_run_queue(child_pid);
+        }
     }
 
     // close the fifo pipe for Commander writing - Server reading 
@@ -166,4 +171,39 @@ int main() {
         }
     }
     deleteQueue(info->running_queue);
+}
+
+void remove_pid_from_run_queue(pid_t mypid) {
+    int qSize = info->running_queue->size;
+    Node* temp_node = info->running_queue->first_node;
+    for (int i = 0 ; i < qSize ; i++) {
+        Triplet* tempTriplet = temp_node->value;
+        // printf("tempTriplet->pid = %d\n", tempTriplet->pid);
+        if (tempTriplet->pid == mypid) {
+            // printf("EIMAI MESA\n");
+            break;
+        }
+        temp_node = temp_node->child;
+    }
+
+    // printf("GEIA SOU\n");
+    Triplet *tempTriplet;
+    if (temp_node->parent != NULL) {
+        temp_node->parent->child = temp_node->child;
+        tempTriplet = temp_node->value;
+        delete_triplet(tempTriplet);
+        free(temp_node);
+    }
+    else if (temp_node->child == NULL) {
+        tempTriplet = dequeue(info->running_queue);
+        delete_triplet(tempTriplet);
+    }
+    else {
+        info->running_queue->first_node = temp_node->child;
+        temp_node->child->parent = NULL;
+        tempTriplet = temp_node->value;
+        delete_triplet(tempTriplet);
+        free(temp_node);
+    }
+    // printf("GEIA SOU\n");
 }

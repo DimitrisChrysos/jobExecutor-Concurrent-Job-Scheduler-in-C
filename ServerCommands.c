@@ -41,14 +41,9 @@ char* commands(char** tokenized, char* unix_command) {
     }
 }
 
-void exec_commands_in_queue(int sig) {
+void signal_handerUSR2(int sig) {}
 
-    // signal "SIGCHLD", means, that the function was called because an old process ended
-    // so we need to remove the first item from the running queue
-    if (sig == SIGCHLD) {
-        Triplet* removed = dequeue(info->running_queue);
-        delete_triplet(removed);
-    }
+void exec_commands_in_queue(int sig) {
 
     // If queued processes exist execute them, until we reach the concurrency limit
     if (info->active_processes < info->concurrency && info->myqueue->size != 0) {
@@ -118,7 +113,8 @@ void exec_commands_in_queue(int sig) {
             
             // add the pid of the process to the triplet (usefull to terminate the process)
             removed_triplet->pid = pid;
-            
+            // printf("----------------------forked child pid = %d\n", pid);
+
             // free the memory of "tokenized"
             for (int i = 0; i < amount + 1; i++) {
                 if (tokenized[i] != NULL) {
@@ -144,7 +140,9 @@ Triplet* issueJob(char* job) {
     enqueue(info->myqueue, mytriplet);
 
     // run the commands, if possible
-    exec_commands_in_queue(-1);
+    if (info->running_queue->size < info->concurrency) {
+        exec_commands_in_queue(-1);
+    }
 
     return mytriplet;
 }
@@ -185,7 +183,7 @@ char* stop_job(char** tokenized) {
             delete_triplet(tempTriplet);
         }
         else {
-            info->running_queue->first_node = temp_node;
+            info->running_queue->first_node = temp_node->child;
             temp_node->child->parent = NULL;
             tempTriplet = temp_node->value;
             kill(tempTriplet->pid, SIGTERM);
@@ -224,7 +222,7 @@ char* stop_job(char** tokenized) {
                 delete_triplet(tempTriplet);
             }
             else {
-                info->myqueue->first_node = temp_node;
+                info->myqueue->first_node = temp_node->child;
                 temp_node->child->parent = NULL;
                 tempTriplet = temp_node->value;
                 kill(tempTriplet->pid, SIGTERM);

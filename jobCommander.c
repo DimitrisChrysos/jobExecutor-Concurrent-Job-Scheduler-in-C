@@ -59,15 +59,15 @@ int jobCommander(int argc, char *argv[]) {
     total_len += total_len*0.1;     // add 10% extra chars for safety
     write(fd_commander, &total_len, sizeof(int));
 
-    printf("I arrived here! total_len = %d, argc = %d\n", total_len, argc);
+    // printf("I arrived here! total_len = %d, argc = %d\n", total_len, argc);
     // write the strings in the pipe
     for (int i = 1 ; i < argc ; i++) {
-        printf("i = %d, total_len = %d, argc = %d\n", i, total_len, argc);
+        // printf("i = %d, total_len = %d, argc = %d\n", i, total_len, argc);
         write(fd_commander, argv[i], strlen(argv[i]));
         write(fd_commander, " ", 1);
         // printf("Wrote: %s\n", argv[i]);
     }
-    printf("I arrived here!\n");
+    // printf("I arrived here!\n");
 
     // give the signal to jocExecutorServer
     kill(p, SIGUSR1);
