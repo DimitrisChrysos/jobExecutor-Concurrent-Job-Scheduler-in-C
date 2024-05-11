@@ -18,3 +18,5 @@ void exec_commands_in_queue(int sig);
 Triplet* issueJob(char* job);
 
 char* stop_job(char** tokenized);
+
+char* poll(char** tokenized);

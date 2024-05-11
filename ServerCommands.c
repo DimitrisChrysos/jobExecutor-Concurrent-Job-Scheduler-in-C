@@ -27,6 +27,12 @@ char* commands(char** tokenized, char* unix_command) {
         char* message = stop_job(tokenized);
         return message; 
     }
+    else if (strcmp(tokenized[0], "poll" ) == 0) {
+        
+        // TODO: read what is needed and write the code...!
+        char* message = poll(tokenized);
+        return message; 
+    }
 }
 
 void exec_commands_in_queue(int sig) {
@@ -241,5 +247,59 @@ char* stop_job(char** tokenized) {
         }
     }
     sprintf(buffer, "%s not found", jobID);
+    return buffer;
+}
+
+char* poll(char** tokenized) {
+    char* type = tokenized[1];
+
+    Queue* myqueue;
+    
+    if (strcmp(type, "running") == 0) {
+        myqueue = info->running_queue;
+        if (myqueue->size == 0) {
+            char buf[] = "No processes running...";
+            char* message = (char*)malloc(sizeof(char)*(strlen(buf) + 1));
+            strcpy(message, buf);
+            return message;
+        }
+    }
+    else if (strcmp(type, "queued") == 0) {
+        myqueue = info->myqueue;
+        if (myqueue->size == 0) {
+            char buf[] = "No processes queued...";
+            char* message = (char*)malloc(sizeof(char)*(strlen(buf) + 1));
+            strcpy(message, buf);
+            return message;
+        }
+    }
+
+    // find total size of the formatted triplets 
+    // and save the pointer for each triplet in an array
+    int total_size = 0;
+    int qSize = myqueue->size;
+    char* TripletPointerArray[qSize];
+    Node* temp_node = myqueue->first_node;
+    for (int i = 0 ; i < qSize ; i++) {
+        Triplet* tempTriplet = temp_node->value;
+        int tempSZ = (strlen(tempTriplet->job) + strlen(tempTriplet->jobID) + 10)*2;
+        total_size += tempSZ;
+        TripletPointerArray[i] = format_triplet(tempTriplet);
+        temp_node = temp_node->child;
+    }
+
+    // create the message (string), consisting of all the triplets to be returned
+    char* buffer = (char*)malloc(total_size + (total_size / 2));
+    buffer[0] = '\0';
+    strcat(buffer, "\n");
+    for (int i = 0 ; i < qSize ; i ++) {
+        strcat(buffer, TripletPointerArray[i]);
+        free(TripletPointerArray[i]);   // free the memory for each formatted_triplet
+        if (i == qSize - 1) // to skip "\n" at the end of the string
+            continue;
+        strcat(buffer, "\n");
+    }
+
+    // return the message
     return buffer;
 }
