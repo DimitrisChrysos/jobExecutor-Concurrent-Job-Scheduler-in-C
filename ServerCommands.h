@@ -8,6 +8,8 @@ typedef struct server_info {
     // int active_processes;
     Queue* running_queue;
     int open;
+    int killed_pid1;
+    int killed_pid2;
 } ServerInfo;
 
 extern ServerInfo *info;

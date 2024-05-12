@@ -26,6 +26,8 @@ char* commands(char** tokenized, char* unix_command) {
     }
     else if (strcmp(tokenized[0], "stop" ) == 0) {
         
+        printf("INSIDE STOP!\n");
+        printf("jobid = %s\n", tokenized[1]);
         char* message = stop_job(tokenized);
         return message; 
     }
@@ -48,6 +50,13 @@ void signal_handerUSR2(int sig) {}
 
 void exec_commands_in_queue(int sig) {
 
+    // forbidden uncomment!!!!!!!, it does force restart the whole pc
+    // if (info->killed_pid2 != -1) {
+    //     info->killed_pid2 = -1;
+    //     return;
+    //     printf("hello: info->killed_pid2 = %d!\n", info->killed_pid2);
+    // }
+
     // If queued processes exist execute them, until we reach the concurrency limit
     if (info->running_queue->size < info->concurrency && info->myqueue->size != 0) {
         
@@ -57,6 +66,7 @@ void exec_commands_in_queue(int sig) {
             // Check if there are no processes left
             if (info->myqueue->size == 0)
                 break;
+                
 
             // get the first process "job" of the queue to be executed
             Triplet* mytriplet = info->myqueue->first_node->value;
@@ -153,42 +163,67 @@ Triplet* issueJob(char* job) {
 char* stop_job(char** tokenized) {
     char* jobID = tokenized[1];
     
+    // printf("xmmmm?\n");
     // Check if the process with jobID is currently running
     int running = 0;
     int qSize = info->running_queue->size;
     Node* temp_node = info->running_queue->first_node;
+    Triplet* tempTriplet;
+    // printf("xmmmm?\n");
+    print_queue_and_stats(info->running_queue);
     for (int i = 0 ; i < qSize ; i++) {
-        Triplet* tempTriplet = temp_node->value;
+        tempTriplet = temp_node->value;
         if (strcmp(tempTriplet->jobID, jobID) == 0) {
             running = 1;
             break;
         }
         temp_node = temp_node->child;
     }
+    // printf("xmmmm?\n");
+    // printf("running: %d | tempTriplet->jobID = %s\n", running, tempTriplet->jobID);
+    // print_queue_and_stats(info->running_queue);
 
     // if found currently running, terminate the process and remove it from the
     // running queue (also deallocate the memory for the node)
     // else if inside the main queue, remove it from the main queue
     // else return jobID not found...
-    Triplet* tempTriplet;
     char* buffer = (char*)malloc(sizeof(char)*(strlen(jobID)+30));
     if (running) {
+        info->killed_pid1 = tempTriplet->pid;
+        info->killed_pid2 = tempTriplet->pid;
+        
+        // printf("IM INSIDE!\n");
         if (temp_node->parent != NULL) {
+            // printf("1. IM INSIDE!\n");
+            if (temp_node->child == NULL) {
+                // printf("1. HERE\n");
+                info->running_queue->last_node = temp_node->parent;
+            }
+            else {
+                temp_node->child->parent = temp_node->parent;
+            }
+            // printf("1. \n");
             temp_node->parent->child = temp_node->child;
-            tempTriplet = temp_node->value;
+            // printf("2. \n");
+            // printf("pid to be killed: %d\n", tempTriplet->pid);
+            
+            info->running_queue->size--;
             kill(tempTriplet->pid, SIGTERM);
             delete_triplet(tempTriplet);
             free(temp_node);
+            // printf("2. HERE\n");   
         }
         else if (temp_node->child == NULL) {
+            // printf("2. IM INSIDE!\n");
             tempTriplet = dequeue(info->running_queue);
             kill(tempTriplet->pid, SIGTERM);
             delete_triplet(tempTriplet);
         }
         else {
+            // printf("3. IM INSIDE!\n");
             info->running_queue->first_node = temp_node->child;
             temp_node->child->parent = NULL;
-            tempTriplet = temp_node->value;
+            info->running_queue->size--;
             kill(tempTriplet->pid, SIGTERM);
             delete_triplet(tempTriplet);
             free(temp_node);
@@ -202,7 +237,7 @@ char* stop_job(char** tokenized) {
         int qSize = info->myqueue->size;
         Node* temp_node = info->myqueue->first_node;
         for (int i = 0 ; i < qSize ; i++) {
-            Triplet* tempTriplet = temp_node->value;
+            tempTriplet = temp_node->value;
             if (strcmp(tempTriplet->jobID, jobID) == 0) {
                 waiting = 1;
                 break;
@@ -212,9 +247,17 @@ char* stop_job(char** tokenized) {
 
         // if it's waiting, remove it from myqueue
         if (waiting) {
+            info->killed_pid1 = tempTriplet->pid;
+            info->killed_pid2 = tempTriplet->pid;
             if (temp_node->parent != NULL) {
+                if (temp_node->child == NULL) {
+                    info->myqueue->last_node = temp_node->parent;
+                }
+                else {
+                    temp_node->child->parent = temp_node->parent;
+                }
                 temp_node->parent->child = temp_node->child;
-                tempTriplet = temp_node->value;
+                info->myqueue->size--;
                 kill(tempTriplet->pid, SIGTERM);
                 delete_triplet(tempTriplet);
                 free(temp_node);
@@ -227,7 +270,7 @@ char* stop_job(char** tokenized) {
             else {
                 info->myqueue->first_node = temp_node->child;
                 temp_node->child->parent = NULL;
-                tempTriplet = temp_node->value;
+                info->myqueue->size--;
                 kill(tempTriplet->pid, SIGTERM);
                 delete_triplet(tempTriplet);
                 free(temp_node);

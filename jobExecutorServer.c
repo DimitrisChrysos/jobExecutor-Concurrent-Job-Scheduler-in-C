@@ -15,6 +15,8 @@ ServerInfo *info;
 
 void jobExecutorServer() {
     
+    // printf("HELLO IM INSIDE SERVER< AM I THOUGH?\n");
+
     // read the number of arguments from jobCommander
     int amount;
     read(info->fd_commander, &amount, sizeof(int));
@@ -120,7 +122,7 @@ int main() {
     int fd_commander = open("commander", O_RDONLY);
 
     // Init the ServerInfo struct and set the global pointer
-    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1};
+    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1, -1, -1};
     info = &myServerInfo;
 
     // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading
@@ -136,10 +138,22 @@ int main() {
     // keep the server open
     while (info->open) {
         int child_pid = waitpid(0, NULL, WNOHANG);
-
+        // printf("haha i stopped!\n");
+        // if (child_pid == info->killed_pid1) {
+        //     info->killed_pid1 = -1;
+        //     info->killed_pid2 = -1;
+        //     // printf("(((((((((((((((((((((((((((((((((((((((((((((((((\n");
+        //     continue;
+        // }
         if (child_pid != 0 && child_pid != -1) {
+            // printf("info->killed_id = %d | child_pid = %d\n", info->killed_pid1, child_pid);
             // printf("******************************** child_pid = %d\n", child_pid);
-            remove_pid_from_run_queue(child_pid);
+            if (info->killed_pid1 == -1) {
+                remove_pid_from_run_queue(child_pid);
+            }
+            else {
+                info->killed_pid1 = -1;
+            }
         }
     }
 
@@ -174,6 +188,7 @@ int main() {
 }
 
 void remove_pid_from_run_queue(pid_t mypid) {
+    // int found = 0;
     int qSize = info->running_queue->size;
     Node* temp_node = info->running_queue->first_node;
     for (int i = 0 ; i < qSize ; i++) {
@@ -181,16 +196,28 @@ void remove_pid_from_run_queue(pid_t mypid) {
         // printf("tempTriplet->pid = %d\n", tempTriplet->pid);
         if (tempTriplet->pid == mypid) {
             // printf("EIMAI MESA\n");
+            // found = 1;
             break;
         }
         temp_node = temp_node->child;
     }
+    // if (found == 0)
+    //     return;
+
+    
 
     // printf("GEIA SOU\n");
     Triplet *tempTriplet;
     if (temp_node->parent != NULL) {
+        if (temp_node->child == NULL) {
+            info->running_queue->last_node = temp_node->parent;
+        }
+        else {
+            temp_node->child->parent = temp_node->parent;
+        }
         temp_node->parent->child = temp_node->child;
         tempTriplet = temp_node->value;
+        info->running_queue--;
         delete_triplet(tempTriplet);
         free(temp_node);
     }
@@ -202,6 +229,7 @@ void remove_pid_from_run_queue(pid_t mypid) {
         info->running_queue->first_node = temp_node->child;
         temp_node->child->parent = NULL;
         tempTriplet = temp_node->value;
+        info->running_queue--;
         delete_triplet(tempTriplet);
         free(temp_node);
     }

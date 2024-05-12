@@ -67,13 +67,14 @@ int jobCommander(int argc, char *argv[]) {
         write(fd_commander, " ", 1);
         // printf("Wrote: %s\n", argv[i]);
     }
-    // printf("I arrived here!\n");
+    // printf("I arrived here 123456789123456789!\n");
 
-    // give the signal to jocExecutorServer
+    // give the signal to jobExecutorServer
     kill(p, SIGUSR1);
 
     // open the fifo for Server writing - Commander reading
     int fd_server = open("server", O_RDONLY);
+    // printf("I did not arrived here 123456789123456789!\n");
 
     // read from Server the returned message
     // if msg_size == -1, there is no actual message send
