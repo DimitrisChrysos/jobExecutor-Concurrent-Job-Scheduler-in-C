@@ -1,4 +1,4 @@
 killall progDelay
-./jobCommander issueJob poll running
-./jobCommander issueJob poll queued
+./jobCommander poll running
+./jobCommander poll queued
 ./jobCommander exit

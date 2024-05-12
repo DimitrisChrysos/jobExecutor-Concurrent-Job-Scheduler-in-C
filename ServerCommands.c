@@ -18,16 +18,12 @@ char* commands(char** tokenized, char* unix_command) {
     }
     else if (strcmp(tokenized[0], "setConcurrency" ) == 0) {
 
-        // printf("before concur = %d\n", info->concurrency);
         info->concurrency = atoi(tokenized[1]);
         exec_commands_in_queue(-1);
-        // printf("concur = %d\n", info->concurrency);
         return "-1";    // to not send an actual message back to the Commander 
     }
     else if (strcmp(tokenized[0], "stop" ) == 0) {
         
-        // printf("INSIDE STOP!\n");
-        // printf("jobid = %s\n", tokenized[1]);
         char* message = stop_job(tokenized);
         return message; 
     }
@@ -50,13 +46,6 @@ void signal_handerUSR2(int sig) {}
 
 void exec_commands_in_queue(int sig) {
 
-    // forbidden uncomment!!!!!!!, it does force restart the whole pc
-    // if (info->killed_pid2 != -1) {
-    //     info->killed_pid2 = -1;
-    //     return;
-    //     printf("hello: info->killed_pid2 = %d!\n", info->killed_pid2);
-    // }
-
     // If queued processes exist execute them, until we reach the concurrency limit
     if (info->running_queue->size < info->concurrency && info->myqueue->size != 0) {
         
@@ -66,7 +55,6 @@ void exec_commands_in_queue(int sig) {
             // Check if there are no processes left
             if (info->myqueue->size == 0)
                 break;
-                
 
             // get the first process "job" of the queue to be executed
             Triplet* mytriplet = info->myqueue->first_node->value;
@@ -189,8 +177,7 @@ char* stop_job(char** tokenized) {
     // else return jobID not found...
     char* buffer = (char*)malloc(sizeof(char)*(strlen(jobID)+30));
     if (running) {
-        info->killed_pid1 = tempTriplet->pid;
-        info->killed_pid2 = tempTriplet->pid;
+        info->killed_pid = tempTriplet->pid;
         
         // printf("IM INSIDE!\n");
         if (temp_node->parent != NULL) {
@@ -227,6 +214,7 @@ char* stop_job(char** tokenized) {
             kill(tempTriplet->pid, SIGTERM);
             delete_triplet(tempTriplet);
             free(temp_node);
+            
         }
         sprintf(buffer, "%s terminated", jobID);
         return buffer;
@@ -247,8 +235,7 @@ char* stop_job(char** tokenized) {
 
         // if it's waiting, remove it from myqueue
         if (waiting) {
-            info->killed_pid1 = tempTriplet->pid;
-            info->killed_pid2 = tempTriplet->pid;
+            info->killed_pid = tempTriplet->pid;
             if (temp_node->parent != NULL) {
                 if (temp_node->child == NULL) {
                     info->myqueue->last_node = temp_node->parent;
@@ -275,6 +262,7 @@ char* stop_job(char** tokenized) {
                 delete_triplet(tempTriplet);
                 free(temp_node);
             }
+            // info->myaction->sa_handler = exec_commands_in_queue;
             sprintf(buffer, "%s removed", jobID);
             return buffer;
         }

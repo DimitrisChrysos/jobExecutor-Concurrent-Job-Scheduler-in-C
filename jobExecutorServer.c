@@ -123,7 +123,7 @@ int main() {
     int fd_commander = open("commander", O_RDONLY);
 
     // Init the ServerInfo struct and set the global pointer
-    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1, -1, -1};
+    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1, -1};
     info = &myServerInfo;
 
     // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading
@@ -144,11 +144,11 @@ int main() {
         if (child_pid != 0 && child_pid != -1) {
             // printf("info->killed_id = %d | child_pid = %d\n", info->killed_pid1, child_pid);
             // printf("******************************** child_pid = %d\n", child_pid);
-            if (info->killed_pid1 == -1) {
+            if (info->killed_pid == -1) {
                 remove_pid_from_run_queue(child_pid);
             }
             else {
-                info->killed_pid1 = -1;
+                info->killed_pid = -1;
             }
         }
     }

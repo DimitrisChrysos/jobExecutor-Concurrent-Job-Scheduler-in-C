@@ -5,11 +5,9 @@ typedef struct server_info {
     int fd_commander;
     Queue* myqueue;
     int concurrency;
-    // int active_processes;
     Queue* running_queue;
     int open;
-    int killed_pid1;
-    int killed_pid2;
+    int killed_pid;
 } ServerInfo;
 
 extern ServerInfo *info;
