@@ -15,7 +15,7 @@ ServerInfo *info;
 
 void jobExecutorServer() {
     
-    // printf("HELLO IM INSIDE SERVER< AM I THOUGH?\n");
+    // printf("HELLO IM INSIDE SERVER, <AM I THOUGH...?>\n");
 
     // read the number of arguments from jobCommander
     int amount;
@@ -58,6 +58,7 @@ void jobExecutorServer() {
     }
     
     // find and exec commands
+    // printf("inside server: tokenized[1] = %s\n", tokenized[1]);
     char* message = commands(tokenized, buffer);
 
     // free the memory of "tokenized"
@@ -138,13 +139,8 @@ int main() {
     // keep the server open
     while (info->open) {
         int child_pid = waitpid(0, NULL, WNOHANG);
-        // printf("haha i stopped!\n");
-        // if (child_pid == info->killed_pid1) {
-        //     info->killed_pid1 = -1;
-        //     info->killed_pid2 = -1;
-        //     // printf("(((((((((((((((((((((((((((((((((((((((((((((((((\n");
-        //     continue;
-        // }
+        // pause();
+        
         if (child_pid != 0 && child_pid != -1) {
             // printf("info->killed_id = %d | child_pid = %d\n", info->killed_pid1, child_pid);
             // printf("******************************** child_pid = %d\n", child_pid);
@@ -188,25 +184,18 @@ int main() {
 }
 
 void remove_pid_from_run_queue(pid_t mypid) {
-    // int found = 0;
+
     int qSize = info->running_queue->size;
     Node* temp_node = info->running_queue->first_node;
     for (int i = 0 ; i < qSize ; i++) {
         Triplet* tempTriplet = temp_node->value;
-        // printf("tempTriplet->pid = %d\n", tempTriplet->pid);
         if (tempTriplet->pid == mypid) {
-            // printf("EIMAI MESA\n");
-            // found = 1;
             break;
         }
         temp_node = temp_node->child;
     }
-    // if (found == 0)
-    //     return;
-
     
 
-    // printf("GEIA SOU\n");
     Triplet *tempTriplet;
     if (temp_node->parent != NULL) {
         if (temp_node->child == NULL) {
@@ -233,5 +222,4 @@ void remove_pid_from_run_queue(pid_t mypid) {
         delete_triplet(tempTriplet);
         free(temp_node);
     }
-    // printf("GEIA SOU\n");
 }

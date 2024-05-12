@@ -73,6 +73,7 @@ int jobCommander(int argc, char *argv[]) {
     kill(p, SIGUSR1);
 
     // open the fifo for Server writing - Commander reading
+    // printf("argv[2] = %s\n", argv[2]);
     int fd_server = open("server", O_RDONLY);
     // printf("I did not arrived here 123456789123456789!\n");
 

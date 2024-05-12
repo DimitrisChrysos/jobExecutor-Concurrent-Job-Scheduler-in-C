@@ -26,8 +26,8 @@ char* commands(char** tokenized, char* unix_command) {
     }
     else if (strcmp(tokenized[0], "stop" ) == 0) {
         
-        printf("INSIDE STOP!\n");
-        printf("jobid = %s\n", tokenized[1]);
+        // printf("INSIDE STOP!\n");
+        // printf("jobid = %s\n", tokenized[1]);
         char* message = stop_job(tokenized);
         return message; 
     }
@@ -170,7 +170,7 @@ char* stop_job(char** tokenized) {
     Node* temp_node = info->running_queue->first_node;
     Triplet* tempTriplet;
     // printf("xmmmm?\n");
-    print_queue_and_stats(info->running_queue);
+    // print_queue_and_stats(info->running_queue);
     for (int i = 0 ; i < qSize ; i++) {
         tempTriplet = temp_node->value;
         if (strcmp(tempTriplet->jobID, jobID) == 0) {
@@ -306,6 +306,7 @@ char* poll(char** tokenized) {
             return message;
         }
     }
+
 
     // find total size of the formatted triplets 
     // and save the pointer for each triplet in an array
