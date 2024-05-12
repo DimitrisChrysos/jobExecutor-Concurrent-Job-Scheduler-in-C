@@ -14,8 +14,6 @@
 ServerInfo *info;
 
 void jobExecutorServer() {
-    
-    // printf("HELLO IM INSIDE SERVER, <AM I THOUGH...?>\n");
 
     // read the number of arguments from jobCommander
     int amount;
@@ -58,7 +56,6 @@ void jobExecutorServer() {
     }
     
     // find and exec commands
-    // printf("inside server: tokenized[1] = %s\n", tokenized[1]);
     char* message = commands(tokenized, buffer);
 
     // free the memory of "tokenized"
@@ -139,11 +136,8 @@ int main() {
     // keep the server open
     while (info->open) {
         int child_pid = waitpid(0, NULL, WNOHANG);
-        // pause();
         
         if (child_pid != 0 && child_pid != -1) {
-            // printf("info->killed_id = %d | child_pid = %d\n", info->killed_pid1, child_pid);
-            // printf("******************************** child_pid = %d\n", child_pid);
             if (info->killed_pid == -1) {
                 remove_pid_from_run_queue(child_pid);
             }

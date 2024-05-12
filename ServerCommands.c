@@ -114,7 +114,6 @@ void exec_commands_in_queue(int sig) {
             
             // add the pid of the process to the triplet (usefull to terminate the process)
             removed_triplet->pid = pid;
-            // printf("----------------------forked child pid = %d\n", pid);
 
             // free the memory of "tokenized"
             for (int i = 0; i < amount + 1; i++) {
@@ -151,14 +150,11 @@ Triplet* issueJob(char* job) {
 char* stop_job(char** tokenized) {
     char* jobID = tokenized[1];
     
-    // printf("xmmmm?\n");
     // Check if the process with jobID is currently running
     int running = 0;
     int qSize = info->running_queue->size;
     Node* temp_node = info->running_queue->first_node;
     Triplet* tempTriplet;
-    // printf("xmmmm?\n");
-    // print_queue_and_stats(info->running_queue);
     for (int i = 0 ; i < qSize ; i++) {
         tempTriplet = temp_node->value;
         if (strcmp(tempTriplet->jobID, jobID) == 0) {
@@ -167,9 +163,6 @@ char* stop_job(char** tokenized) {
         }
         temp_node = temp_node->child;
     }
-    // printf("xmmmm?\n");
-    // printf("running: %d | tempTriplet->jobID = %s\n", running, tempTriplet->jobID);
-    // print_queue_and_stats(info->running_queue);
 
     // if found currently running, terminate the process and remove it from the
     // running queue (also deallocate the memory for the node)
@@ -179,35 +172,25 @@ char* stop_job(char** tokenized) {
     if (running) {
         info->killed_pid = tempTriplet->pid;
         
-        // printf("IM INSIDE!\n");
         if (temp_node->parent != NULL) {
-            // printf("1. IM INSIDE!\n");
             if (temp_node->child == NULL) {
-                // printf("1. HERE\n");
                 info->running_queue->last_node = temp_node->parent;
             }
             else {
                 temp_node->child->parent = temp_node->parent;
             }
-            // printf("1. \n");
             temp_node->parent->child = temp_node->child;
-            // printf("2. \n");
-            // printf("pid to be killed: %d\n", tempTriplet->pid);
-            
             info->running_queue->size--;
             kill(tempTriplet->pid, SIGTERM);
             delete_triplet(tempTriplet);
             free(temp_node);
-            // printf("2. HERE\n");   
         }
         else if (temp_node->child == NULL) {
-            // printf("2. IM INSIDE!\n");
             tempTriplet = dequeue(info->running_queue);
             kill(tempTriplet->pid, SIGTERM);
             delete_triplet(tempTriplet);
         }
         else {
-            // printf("3. IM INSIDE!\n");
             info->running_queue->first_node = temp_node->child;
             temp_node->child->parent = NULL;
             info->running_queue->size--;
@@ -262,7 +245,6 @@ char* stop_job(char** tokenized) {
                 delete_triplet(tempTriplet);
                 free(temp_node);
             }
-            // info->myaction->sa_handler = exec_commands_in_queue;
             sprintf(buffer, "%s removed", jobID);
             return buffer;
         }
@@ -294,7 +276,6 @@ char* poll(char** tokenized) {
             return message;
         }
     }
-
 
     // find total size of the formatted triplets 
     // and save the pointer for each triplet in an array
