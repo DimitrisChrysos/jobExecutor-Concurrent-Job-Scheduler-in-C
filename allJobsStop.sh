@@ -1,47 +1,33 @@
 #!/bin/bash
 
-echo "**********************************"
+# get the output of the command "/jobCommander poll queued" to find the last id existing in the waiting queue
+# and then stop all the jobIDs until we reach the last ID  
 program_output=$(command "./jobCommander" "poll" "queued")
 if [ "$program_output" != "No processes queued..." ]; then
-    # echo "Program output: $program_output"
-    last_line=$(echo "$program_output" | tail -n 1)
-    # echo "Last line: $last_line"
-    last_job="${last_line%%,*}"
-    last_job=${last_job:1}
-    # echo "Extracted characters: $last_job"
+    last_line=$(echo "$program_output" | tail -n 1) # get the last line
+    last_job="${last_line%%,*}" # get a substring (until the first "," is reached) of the string
+    last_job=${last_job:1}  # get the last jobID
     last_id=${last_job:4}
-    # echo "Extracted characters: $last_id"
-    int_id=$((last_id))
-    # echo "int: $int_id"
-    for ((i = 1; i <= int_id; i++))
+    int_id=$((last_id)) # get the last ID 
+    for ((i = 1; i <= int_id; i++)) # stop all the jobIDs until we reach the last ID 
     do
-        # echo "Number: $i"
         temp_jobID="job_$i"
-        # echo "$temp_jobID"
         ./jobCommander stop "$temp_jobID"
     done
 fi
 
-echo "       -----       "
-
+# get the output of the command "/jobCommander poll running" to find the last id existing in the running queue
+# and then stop all the jobIDs until we reach the last ID  
 program_output=$(command "./jobCommander" "poll" "running")
-echo "$program_output"
 if [ "$program_output" != "No processes running..." ]; then
-    # echo "Program output: $program_output"
-#     last_line=$(echo "$program_output" | tail -n 1)
-#     last_job="${last_line%%,*}"
-#     last_job=${last_job:1}
-#     last_id=${last_job:4}
-#     int_id=$((last_id))
-#     for ((i = 1; i <= int_id; i++))
-#     do
-#         temp_jobID="job_$i"
-#         ./jobCommander stop "$temp_jobID"
-#     done
+    last_line=$(echo "$program_output" | tail -n 1) # get the last line
+    last_job="${last_line%%,*}" # get a substring (until the first "," is reached) of the string
+    last_job=${last_job:1}  # get the last jobID
+    last_id=${last_job:4}
+    int_id=$((last_id)) # get the last ID 
+    for ((i = 1; i <= int_id; i++)) # stop all the jobIDs until we reach the last ID 
+    do
+        temp_jobID="job_$i"
+        ./jobCommander stop "$temp_jobID"
+    done
 fi
-echo "**********************************"
-
-
-
-
-# No processes running...
