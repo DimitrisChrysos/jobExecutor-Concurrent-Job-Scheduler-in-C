@@ -1,0 +1,34 @@
+ ./jobCommander issueJob touch bFile1.txt
+ ./jobCommander issueJob touch bFile2.txt
+ ./jobCommander issueJob touch bFile3.txt
+ ./jobCommander issueJob touch bFile4.txt
+ ./jobCommander issueJob touch bFile5.txt
+ ./jobCommander issueJob touch bFile6.txt
+ ./jobCommander issueJob touch bFile7.txt
+ ./jobCommander issueJob touch bFile8.txt
+ ./jobCommander issueJob touch bFile9.txt
+ ./jobCommander issueJob touch bFile10.txt
+ ./jobCommander issueJob mv bFile1.txt ren_bFile1.txt
+ ./jobCommander issueJob mv bFile2.txt ren_bFile2.txt
+ ./jobCommander issueJob mv bFile3.txt ren_bFile3.txt
+ ./jobCommander issueJob mv bFile4.txt ren_bFile4.txt
+ ./jobCommander issueJob mv bFile5.txt ren_bFile5.txt
+ ./jobCommander issueJob mv bFile6.txt ren_bFile6.txt
+ ./jobCommander issueJob mv bFile7.txt ren_bFile7.txt
+ ./jobCommander issueJob mv bFile8.txt ren_bFile8.txt
+ ./jobCommander issueJob mv bFile9.txt ren_bFile9.txt
+ ./jobCommander issueJob mv bFile10.txt ren_bFile10.txt
+ ./jobCommander issueJob tar -czvf my_B_CompressedbFile.tar.gz ren_bFile1.txt ren_bFile2.txt ren_bFile3.txt ren_bFile4.txt ren_bFile5.txt ren_bFile6.txt ren_bFile7.txt ren_bFile8.txt ren_bFile9.txt ren_bFile10.txt
+ ./jobCommander issueJob rm ren_bFile1.txt
+ ./jobCommander issueJob rm ren_bFile2.txt
+ ./jobCommander issueJob rm ren_bFile3.txt
+ ./jobCommander issueJob rm ren_bFile4.txt
+ ./jobCommander issueJob rm ren_bFile5.txt
+ ./jobCommander issueJob rm ren_bFile6.txt
+ ./jobCommander issueJob rm ren_bFile7.txt
+ ./jobCommander issueJob rm ren_bFile8.txt
+ ./jobCommander issueJob rm ren_bFile9.txt
+ ./jobCommander issueJob rm ren_bFile10.txt
+ ./jobCommander issueJob mkdir my_B_decompressed_directory
+ ./jobCommander issueJob tar -xzvf my_B_CompressedbFile.tar.gz -C my_B_decompressed_directory
+ ./jobCommander issueJob ls my_B_decompressed_directory
