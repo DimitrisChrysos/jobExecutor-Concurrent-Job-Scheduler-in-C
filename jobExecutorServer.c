@@ -14,18 +14,55 @@ ServerInfo *info;
 
 void jobExecutorServer() {
 
-    // read the number of arguments from jobCommander
+    // read if the arguments are goind to be send in multiple packets or not
+    // packets = 1 -> not || packets > 1 -> yes
     int amount;
-    read(info->fd_commander, &amount, sizeof(int));
-    amount -= 1;
-
-    // read the total numbers of chars (a bit larger than the actual one)
     int total_len;
-    read(info->fd_commander, &total_len, sizeof(int));
+    int packets;
+    char* arr;
+    int first_packet = 1;
+    read(info->fd_commander, &packets, sizeof(int));
+    if (packets > 1) {
+        
+        // init total_len
+        total_len = 0;
+        
+        // read the len of each packet and the packet itself
+        for (int i = 0 ; i < packets ; i++) {
 
-    // read the string from the pipe
-    char arr[total_len];
-    read(info->fd_commander, arr, sizeof(arr));
+            // read the packet_len
+            int packet_len;
+            read(info->fd_commander, &packet_len, sizeof(int));
+            total_len += packet_len;
+
+            // read the packet
+            if (first_packet) {
+                arr = (char*)malloc(sizeof(char)*total_len);
+                read(info->fd_commander, arr, sizeof(arr));
+                first_packet = 0;
+            }
+            else {
+                char temp_arr[packet_len];
+                read(info->fd_commander, temp_arr, sizeof(temp_arr));
+                arr = (char*)realloc(arr, sizeof(char)*total_len);
+                strcat(arr, temp_arr);
+            }
+        }
+    }
+    else if (packets == 1) {
+        // read the number of arguments from jobCommander
+        read(info->fd_commander, &amount, sizeof(int));
+        amount -= 1;
+
+        // read the total numbers of chars (a bit larger than the actual one)
+        read(info->fd_commander, &total_len, sizeof(int));
+
+        // read the string from the pipe
+        arr = (char*)malloc(total_len);
+        read(info->fd_commander, arr, total_len);
+    }
+
+
 
     // tokenize the string
     char** tokenized = (char **)malloc(amount * sizeof(char*));   
@@ -56,11 +93,7 @@ void jobExecutorServer() {
     
     // find and exec commands
     char* message = commands(tokenized, buffer);
-    // printf("main queue size = %d | ", info->myqueue->size);
-    // printf("running queue size = %d | ", info->running_queue->size);
-    // printf("message: %s | ", message);
-    // Triplet* bla = info->running_queue->first_node->value;
-    // printf("running job: %s\n", bla->job);
+    free(arr);
 
     // free the memory of "tokenized"
     for (int i = 0; i < amount; i++) {

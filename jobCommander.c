@@ -9,6 +9,8 @@
 #include <signal.h>
 #include "queue.h"
 
+#define PACKET_CAPACITY 100 // the max capacity of each packet
+
 int jobCommander(int argc, char *argv[]) {
 
     // check if the server is active
@@ -35,24 +37,66 @@ int jobCommander(int argc, char *argv[]) {
     // open the fifo for Commander writing - Server reading
     int fd_commander = open("commander", O_WRONLY);
 
-    // write the number of strings for the pipe
-    write(fd_commander, &argc, sizeof(int));
+    // if packets > 1 -> server has way to many arguments and needs to send arguments in multiple packets
+    // else if packets = 1 -> server doesn't need to send arguments in multiple packets
+    int packets;  // total packets needed to send
+    if (argc > PACKET_CAPACITY) {
+        packets = argc / PACKET_CAPACITY;
+        if ((argc % PACKET_CAPACITY) > 0) {
+            packets++;
+        }
 
-    // write the total number of chars that will be in the pipe
-    int total_len = 0;
-    for (int i = 1 ; i < argc ; i++) {
-        total_len += strlen(argv[i]);
+        // write the amount of packets needed to send
+        write(fd_commander, &packets, sizeof(int));
+        
+        // write each packet
+        int index = 0;
+        for (int i = 0 ; i < packets ; i++) {
+            int packet_len = 0;
+            for (int j = index ; j < index + PACKET_CAPACITY ; j++) {
+                packet_len += strlen(argv[j]);
+                packet_len += packet_len;     // add some extra chars for the " " between words
+                packet_len += packet_len*0.1;     // add 10% extra chars for safety
+            }
+
+            // write the len of the packet
+            write(fd_commander, &packet_len, sizeof(int));
+
+            // write the packet in the pipe
+            for (int j = index ; j < index + PACKET_CAPACITY ; j++) {
+                write(fd_commander, argv[j], strlen(argv[j]));
+                write(fd_commander, " ", 1);
+            }
+            
+            // add packet_capacity to the current argument index
+            index += PACKET_CAPACITY;
+            printf("packet_index = %d\n", i);
+        }
     }
-    total_len += total_len;     // add some extra chars for the " " between words
-    total_len += total_len*0.1;     // add 10% extra chars for safety
-    write(fd_commander, &total_len, sizeof(int));
+    else {
+        // write the amount of packets needed to send is one, so no multiple packets
+        packets = 1;
+        write(fd_commander, &packets, sizeof(int));
 
-    // write the strings in the pipe
-    for (int i = 1 ; i < argc ; i++) {
-        write(fd_commander, argv[i], strlen(argv[i]));
-        write(fd_commander, " ", 1);
+        // write the number of strings for the pipe
+        write(fd_commander, &argc, sizeof(int));
+
+        // write the total number of chars that will be in the pipe
+        int total_len = 0;
+        for (int i = 1 ; i < argc ; i++) {
+            total_len += strlen(argv[i]);
+        }
+        total_len += total_len;     // add some extra chars for the " " between words
+        total_len += total_len*0.1;     // add 10% extra chars for safety
+        write(fd_commander, &total_len, sizeof(int));
+
+        // write the strings in the pipe
+        for (int i = 1 ; i < argc ; i++) {
+            write(fd_commander, argv[i], strlen(argv[i]));
+            write(fd_commander, " ", 1);
+        }
     }
-
+    
     // give the signal to jobExecutorServer
     kill(p, SIGUSR1);
 
