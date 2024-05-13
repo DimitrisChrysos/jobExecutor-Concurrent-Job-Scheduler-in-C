@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-// #include "queue.h"
 #include "ServerCommands.h"
 
 ServerInfo *info;
@@ -57,6 +56,11 @@ void jobExecutorServer() {
     
     // find and exec commands
     char* message = commands(tokenized, buffer);
+    // printf("main queue size = %d | ", info->myqueue->size);
+    // printf("running queue size = %d | ", info->running_queue->size);
+    // printf("message: %s | ", message);
+    // Triplet* bla = info->running_queue->first_node->value;
+    // printf("running job: %s\n", bla->job);
 
     // free the memory of "tokenized"
     for (int i = 0; i < amount; i++) {
