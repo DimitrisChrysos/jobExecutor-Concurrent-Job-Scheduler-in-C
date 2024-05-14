@@ -10,7 +10,8 @@ typedef struct server_info {
     Queue* running_queue;
     int open;
     int killed_pid;
-    sem_t* mysem;
+    sem_t* serverSem;
+    sem_t* commanderSem;
 } ServerInfo;
 
 extern ServerInfo *info;
