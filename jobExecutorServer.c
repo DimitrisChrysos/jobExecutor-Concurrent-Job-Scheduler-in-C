@@ -20,8 +20,6 @@ void jobExecutorServer() {
     // read the pid of the commander
     int com_pid;
     read(info->fd_commander, &com_pid, sizeof(int));
-    // printf("com_pid = %d\n", com_pid);
-    // printf("server pid = %d\n", getpid());
 
     // read the number of arguments from jobCommander
     int amount;
@@ -61,7 +59,6 @@ void jobExecutorServer() {
         for (int i = 0 ; i < packets ; i++) {
 
             // wait for commander to post the semaphore (send the package)
-            printf("SERVER: waiting for packet...\n");
             sem_wait(info->serverSem);
 
             // read the packet_len
@@ -73,21 +70,15 @@ void jobExecutorServer() {
             if (first_packet) {
                 arr = (char*)malloc(sizeof(char)*packet_len);
                 read(info->fd_commander, arr, sizeof(char)*packet_len);
-                printf("SERVER: packet_len = %d | packet = %s\n\n\n", packet_len, arr);
-                // arr[total_len] = '\0';
                 first_packet = 0;
             }
             else {
                 char temp_arr[packet_len];
                 read(info->fd_commander, temp_arr, sizeof(char)*packet_len);
-                printf("SERVER: packet_len = %d | packet = %s\n\n\n", packet_len, temp_arr);
                 arr = (char*)realloc(arr, sizeof(char)*total_len);
                 strcat(arr, temp_arr);
-                // arr[total_len] = '\0';
             }
-            // printf("SERVER: packet_len = %d | packet string = %s\n", packet_len, arr);
 
-            // printf("SERVER: packet received!\n");
             sem_post(info->commanderSem);
 
         }
@@ -98,10 +89,6 @@ void jobExecutorServer() {
     }
     else if (packets == 1) {
 
-        // // read the number of arguments from jobCommander
-        // read(info->fd_commander, &amount, sizeof(int));
-        // amount -= 1;
-
         // read the total numbers of chars (a bit larger than the actual one)
         read(info->fd_commander, &total_len, sizeof(int));
 
@@ -109,8 +96,6 @@ void jobExecutorServer() {
         arr = (char*)malloc(total_len);
         read(info->fd_commander, arr, total_len);
     }
-
-    // printf("string = %s\n", arr);
 
     // tokenize the string
     char** tokenized = (char **)malloc(amount * sizeof(char*));   
@@ -139,10 +124,14 @@ void jobExecutorServer() {
         }
     }
 
-    // for (int i = 0 ; i < amount ; i++) {
-    //     printf("tokenized[%d] = %s\n", i, tokenized[i]);
-    // }
-    
+    int real_amount;
+    for (int i = 0 ; i < amount ; i++) {
+        if (strcmp(tokenized[i],"") == 0) {
+            real_amount = i + 1;
+            break;
+        }
+    }
+
     // find and exec commands
     char* message = commands(tokenized, buffer);
     free(arr);

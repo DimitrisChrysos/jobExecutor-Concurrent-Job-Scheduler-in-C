@@ -13,6 +13,7 @@
 
 char* commands(char** tokenized, char* unix_command) {
     if (strcmp(tokenized[0], "issueJob" ) == 0) {
+        
         Triplet* returned_message = issueJob(unix_command);
         char* message = format_triplet(returned_message);
         return message;

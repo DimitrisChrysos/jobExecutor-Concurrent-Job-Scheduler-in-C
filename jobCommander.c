@@ -85,20 +85,16 @@ int jobCommander(int argc, char *argv[]) {
         if (commanderSem == SEM_FAILED) {
             printf("commander: commanderSem failed\n");
         }
-        
-        // printf("total packets = %d\n", packets);
 
         // write each packet
         int index = 0;
         for (int i = 0 ; i < packets ; i++) {
-
-            printf("COMMANDER: trying to sent packet (with index: %d of %d) \n", i+1, packets);
             
+            // calculate packet len
             int broke = 0 ;
             int packet_len = 0;
             for (int j = index ; j < index + PACKET_CAPACITY ; j++) {
                 if (argv[j] == NULL) {
-                    printf("last argument = %s\n", argv[j-1]);
                     broke = j;
                     break;
                 }
@@ -107,24 +103,23 @@ int jobCommander(int argc, char *argv[]) {
 
                 if (j == index + PACKET_CAPACITY - 1) {
 
-                    printf("last argument = %s\n", argv[j]);
                     packet_len += 3;
                 }
             }
-            
-
             packet_len += 1;
+            
             // write the len of the packet
             write(fd_commander, &packet_len, sizeof(int));
 
             // write the packet in the pipe
             for (int j = index ; j < index + PACKET_CAPACITY ; j++) {
+                if (j == 0)
+                    continue;
                 if (argv[j] == NULL) {
                     write(fd_commander, "\0", sizeof(char));
                     break;
                 }
                 else if (j == index + PACKET_CAPACITY - 1) {
-                    printf("COMMANDER: argv[%d] = %s\n", j, argv[j]);
                     write(fd_commander, argv[j], strlen(argv[j]));
                     write(fd_commander, "\0", sizeof(char));
                 }
@@ -132,19 +127,15 @@ int jobCommander(int argc, char *argv[]) {
                     write(fd_commander, argv[j], strlen(argv[j]));
                     write(fd_commander, " ", sizeof(char));
                 }
-                    
             }
 
             // post the semaphore to notify ready to read
             sem_post(serverSem);
-            printf("COMMANDER: packet (with index: %d of %d) sent!\n", i+1, packets);
 
             // wait for the server to read the packet
             sem_wait(commanderSem);
-            printf("COMMANDER: packet was received by the server!\n");
             
-            // add packet_capacity to the current argument index
-
+            // fix the argument index to the current position
             if (broke) {
                 index += broke;
                 break;
@@ -152,7 +143,6 @@ int jobCommander(int argc, char *argv[]) {
             else {
                 index += PACKET_CAPACITY;
             }
-
         }
 
         // close the semaphore
@@ -162,9 +152,6 @@ int jobCommander(int argc, char *argv[]) {
         // write the amount of packets needed to send is one, so no multiple packets
         packets = 1;
         write(fd_commander, &packets, sizeof(int));
-
-        // // write the number of strings for the pipe
-        // write(fd_commander, &argc, sizeof(int));
 
         // write the total number of chars that will be in the pipe
         int total_len = 0;
@@ -198,7 +185,6 @@ int jobCommander(int argc, char *argv[]) {
         printf("%s\n", message); // print the message
     }
     
-
     // close the fifos
     close(fd_commander);
     close(fd_server);
