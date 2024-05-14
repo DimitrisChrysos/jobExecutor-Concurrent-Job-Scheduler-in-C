@@ -1,4 +1,5 @@
 #include "queue.h"
+#include <semaphore.h>
 
 // struct to save info for the server (global access through pointer)
 typedef struct server_info ServerInfo;
@@ -9,6 +10,7 @@ typedef struct server_info {
     Queue* running_queue;
     int open;
     int killed_pid;
+    sem_t* mysem;
 } ServerInfo;
 
 extern ServerInfo *info;

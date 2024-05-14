@@ -9,12 +9,21 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "ServerCommands.h"
+#include <semaphore.h>
 
 ServerInfo *info;
 
+void useless_sig_handler() {}
+
 void jobExecutorServer() {
 
-    // read if the arguments are goind to be send in multiple packets or not
+    // read the pid of the commander
+    int com_pid;
+    read(info->fd_commander, &com_pid, sizeof(int));
+    printf("com_pid = %d\n", com_pid);
+    printf("server pid = %d\n", getpid());
+
+    // read if the arguments will be send in multiple packets or not
     // packets = 1 -> not || packets > 1 -> yes
     int amount;
     int total_len;
@@ -24,15 +33,28 @@ void jobExecutorServer() {
     read(info->fd_commander, &packets, sizeof(int));
     if (packets > 1) {
         
+        // create a semaphore
+        info->mysem = sem_open("/my_sem", O_CREAT, 0666, 0);
+        if (info->mysem == SEM_FAILED) {
+            printf("server: mysem failed\n");
+        }
+
+        // send signal to Commander to notify Server has created the semaphore
+        // and it is ready to read
+        kill(com_pid, SIGUSR2);
+        
         // init total_len
         total_len = 0;
         
         // read the len of each packet and the packet itself
         for (int i = 0 ; i < packets ; i++) {
 
+            // wait for commander to post the semaphore
+            sem_wait(info->mysem);
+
             // read the packet_len
-            int packet_len;
-            read(info->fd_commander, &packet_len, sizeof(int));
+            unsigned long long int packet_len;
+            read(info->fd_commander, &packet_len, sizeof(unsigned long long int));
             total_len += packet_len;
 
             // read the packet
@@ -48,8 +70,12 @@ void jobExecutorServer() {
                 strcat(arr, temp_arr);
             }
         }
+
+        // close the semaphore
+        sem_close(info->mysem);
     }
     else if (packets == 1) {
+
         // read the number of arguments from jobCommander
         read(info->fd_commander, &amount, sizeof(int));
         amount -= 1;
@@ -142,6 +168,7 @@ void create_jobExecutorServerTEXT() {
 
 int main() {
     
+    // create the txt file
     create_jobExecutorServerTEXT();
 
     // create the Queue for the jobs
@@ -157,7 +184,7 @@ int main() {
     int fd_commander = open("commander", O_RDONLY);
 
     // Init the ServerInfo struct and set the global pointer
-    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1, -1};
+    ServerInfo myServerInfo = {fd_commander, myqueue, 1, running_queue, 1, -1, NULL};
     info = &myServerInfo;
 
     // wait signal from jobCommander and then read from the fifo pipe for Commander writing - Server reading
@@ -170,7 +197,7 @@ int main() {
     child_act.sa_flags = 0;
     sigaction(SIGCHLD, &child_act, NULL);
 
-    // keep the server open
+    // keep the server open (waiting for the signals)
     while (info->open) {
         int child_pid = waitpid(0, NULL, WNOHANG);
         

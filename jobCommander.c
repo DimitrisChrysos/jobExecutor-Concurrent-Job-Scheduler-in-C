@@ -8,8 +8,11 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "queue.h"
+#include <semaphore.h>
 
-#define PACKET_CAPACITY 100 // the max capacity of each packet
+#define PACKET_CAPACITY 10 // the max capacity of each packet
+
+void useless_sig_handler() {}
 
 int jobCommander(int argc, char *argv[]) {
 
@@ -36,6 +39,11 @@ int jobCommander(int argc, char *argv[]) {
 
     // open the fifo for Commander writing - Server reading
     int fd_commander = open("commander", O_WRONLY);
+    
+    // write the pid of the commander
+    int mypid = getpid();
+    printf("mypid = %d\n", mypid);
+    write(fd_commander, &mypid, sizeof(int));
 
     // if packets > 1 -> server has way to many arguments and needs to send arguments in multiple packets
     // else if packets = 1 -> server doesn't need to send arguments in multiple packets
@@ -49,29 +57,60 @@ int jobCommander(int argc, char *argv[]) {
         // write the amount of packets needed to send
         write(fd_commander, &packets, sizeof(int));
         
+        // send signal to make the Server start executing 
+        kill(p, SIGUSR1);
+
+        // wait for the Server to send signal, notifying that it has created the semaphore
+        int sig;
+        sigset_t usr2;
+        sigemptyset(&usr2);
+        sigaddset(&usr2, SIGUSR2);
+        signal(SIGUSR2, NULL);
+        sigprocmask(SIG_BLOCK, &usr2, NULL);
+        sigwait(&usr2, &sig);
+
+        // unblock SIGUSR2, signal
+        sigprocmask(SIG_UNBLOCK, &usr2, NULL);
+
+        // open the semaphore 
+        sem_t *mysem = sem_open("/my_sem", 0);
+        if (mysem == SEM_FAILED) {
+            printf("commander: mysem failed\n");
+        }
+        
+        printf("total packets = %d\n", packets);
+
         // write each packet
         int index = 0;
         for (int i = 0 ; i < packets ; i++) {
-            int packet_len = 0;
+            unsigned long long int packet_len = 0;
             for (int j = index ; j < index + PACKET_CAPACITY ; j++) {
                 packet_len += strlen(argv[j]);
+                // printf("temp_packet_len = %lld\n", packet_len);
                 packet_len += packet_len;     // add some extra chars for the " " between words
                 packet_len += packet_len*0.1;     // add 10% extra chars for safety
             }
 
             // write the len of the packet
-            write(fd_commander, &packet_len, sizeof(int));
+            write(fd_commander, &packet_len, sizeof(unsigned long long int));
 
             // write the packet in the pipe
             for (int j = index ; j < index + PACKET_CAPACITY ; j++) {
                 write(fd_commander, argv[j], strlen(argv[j]));
                 write(fd_commander, " ", 1);
             }
+
+            // post the semaphore to notify ready to read
+            sem_post(mysem);
             
             // add packet_capacity to the current argument index
             index += PACKET_CAPACITY;
-            printf("packet_index = %d\n", i);
+
+            printf("packet_index = %d | packet_len = %lld\n", i, packet_len);
         }
+
+        // close the semaphore
+        sem_close(mysem);
     }
     else {
         // write the amount of packets needed to send is one, so no multiple packets
@@ -95,10 +134,11 @@ int jobCommander(int argc, char *argv[]) {
             write(fd_commander, argv[i], strlen(argv[i]));
             write(fd_commander, " ", 1);
         }
+        
+        // give the signal to jobExecutorServer
+        kill(p, SIGUSR1);
     }
     
-    // give the signal to jobExecutorServer
-    kill(p, SIGUSR1);
 
     // open the fifo for Server writing - Commander reading
     int fd_server = open("server", O_RDONLY);

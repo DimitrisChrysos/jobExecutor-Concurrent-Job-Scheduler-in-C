@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "ServerCommands.h"
+#include <semaphore.h>
 
 char* commands(char** tokenized, char* unix_command) {
     if (strcmp(tokenized[0], "issueJob" ) == 0) {
