@@ -1,18 +1,18 @@
 // struct for the Nodes of the Queue
 typedef struct node Node;
 typedef struct node {
-    void* value;
-    int index;
-    Node* parent;
-    Node* child;
+    void* value;    // value of the node
+    int index;  // index of the node
+    Node* parent;   // parent of the node
+    Node* child;    // child of the node
 } Node;
 
 // struct for the Queue
 typedef struct queue Queue;
 typedef struct queue {
-    Node* first_node;
-    Node* last_node;
-    int size;
+    Node* first_node;   // the first node of the queue
+    Node* last_node;    // the last node of the queue
+    int size;   // the size of the queue
 } Queue;
 
 // creates and initializes the queue
@@ -45,10 +45,10 @@ int queue_size(Queue myqueue);
 // struct for the Triplet of the jobs
 typedef struct triplet Triplet;
 typedef struct triplet {
-    char* jobID;
-    char* job;
-    int queuePosition;
-    int pid;
+    char* jobID;    // jobID of the Triplet
+    char* job;  // job of the Triplet
+    int queuePosition;  // the position of the triplet in the queue
+    int pid;    // if triplet in the running queue, the pid of the process
 } Triplet;
 
 // initalizes a Triplet

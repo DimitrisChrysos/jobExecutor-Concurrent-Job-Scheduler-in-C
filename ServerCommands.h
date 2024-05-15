@@ -4,14 +4,14 @@
 // struct to save info for the server (global access through pointer)
 typedef struct server_info ServerInfo;
 typedef struct server_info {
-    int fd_commander;
-    Queue* myqueue;
-    int concurrency;
-    Queue* running_queue;
-    int open;
-    int killed_pid;
-    sem_t* serverSem;
-    sem_t* commanderSem;
+    int fd_commander;   // fd for the Commander writting fifo pipe
+    Queue* myqueue; // waiting queue
+    int concurrency;    // concurrency number
+    Queue* running_queue;   // running queue
+    int open;   // if the server is open
+    int killed_pid; // the child process pid, killed by the stop command
+    sem_t* serverSem;   // the semaphore for the Server waiting
+    sem_t* commanderSem;    // the semaphore for the Commander waiting
 } ServerInfo;
 
 // struct to save the information of the server

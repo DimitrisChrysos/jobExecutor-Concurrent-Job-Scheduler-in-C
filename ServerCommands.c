@@ -90,7 +90,7 @@ void exec_commands_in_queue(int sig) {
             }
             tokenized[amount] = NULL;
 
-            // remove the front process from the queue and add it to the running_queue
+            // remove the front process from the waiting queue and add it to the running_queue
             Triplet* removed_triplet = dequeue(info->myqueue);
             enqueue(info->running_queue, removed_triplet);
 

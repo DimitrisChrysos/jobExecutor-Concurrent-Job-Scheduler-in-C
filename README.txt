@@ -47,3 +47,34 @@
     - Αν σταλεί η εντολή «./jobCommander exit», ο Server κλείνει το pipe του για διάβασμα, 
     διαγράφει το .txt file, ελευθερώνει τη μνήμη για τα Triplets και διαγράφει τα Queues.
     Με το τρόπο αυτό ο Server κλείνει.
+
+4. Η διαχείρηση των commands από τον Commander προς τον Server γίνεται με τα αρχεία:
+    - ServerCommands.h: Περιέχει τον ορισμό του struct ServerInfo για το information του Server,
+    τη δήλωση των συναρτήσεων για κάθε command.
+    - ServerCommands.c: Η υλοποίηση σε κώδικα των παραπάνω.
+    4.1. Η συνάρτηση «char* commands(char** tokenized, char* unix_command)»:
+        - Ξεκαθαρίζει ποια κατηγορία command καλείται και είτε καλεί την βοηθητική της είτε 
+        εκτελεί τη λειτουργία της.
+        - Επιστρέφει επίσης "-1" για μη επιστροφή μηνύματος στον Commander ή το μήνυμα.
+    4.2. Η συνάρτηση/signal_handler «exec_commands_in_queue(int sig)»:
+        - Ελέγχει αν μπορούν να αρχίσουν την εκτέλεση τους άλλα processes και αν μπορούν εκτελεί 
+        όσα γίνεται.
+        - Αυτό το κάνει, παίρνοντας κάθε φορά, το πρώτο process από το waiting Queue, βάζοντας το
+        στο running Queue, φτιάχνοντας το queue position για κάθε process στο waiting Queue και
+        εκτελώντας το χρησιμοποιόντας μία fork() και μία execvp().
+    4.3. Η συνάρτηση «Triplet* issueJob(char* job)»: 
+        - Χρησιμοποιείται για το command «issueJob».
+        - Δημιουργεί ένα Triplet για το job και το βάζει στο queue.
+        - Καλεί την συνάρτηση «exec_commands_in_queue()» για να εκτελέσει, αν γίνεται, όσα process
+        γίνεται.
+        - Επιστρέφει το Triplet.
+    4.4. Η συνάρτηση «char* stop_job(char** tokenized)»:
+        - Χρησιμοποιείται για το command «stop jobID».
+        - Ελέγχει αν η εργασία με το jobID τρέχει. Αν ναι τη σκοτώνει και την βγάζει από το running 
+        Queue, αλλιώς αν είναι μέσα στο waiting Queue, την αφαιρεί από αυτό.
+        - Επιστρέφει μήνυμα ειδοποίησης του τι έκανε.
+    4.5. Η συνάρτηση «char* poll(char** tokenized)»:
+        - Χρησιμοποιείται για το command «poll running/queued».
+        - Βρίσκει ποια από τις δύο ουρές θέλουμε, βρίσκει το συνολικό μέγεθος των Triplet υπό τη
+        μορφή string και κατασκευάζει ένα μεγάλο μήνυμα (string) με όλα τα Triplets στο Queue.
+        - Επιστρέφει το μήνυμα.
