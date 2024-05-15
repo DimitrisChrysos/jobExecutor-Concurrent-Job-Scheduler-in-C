@@ -14,15 +14,7 @@ clean:
 	rm -f progDelay
 	rm -rf my_A_decompressed_directory
 	rm -rf my_B_decompressed_directory
-	rm -f bFile1.txt
-	rm -f bFile2.txt
-	rm -f bFile3.txt
-	rm -f bFile4.txt
-	rm -f bFile5.txt
-	rm -f bFile6.txt
-	rm -f bFile7.txt
-	rm -f bFile8.txt
-	rm -f bFile9.txt
-	rm -f bFile10.txt
+	rm -f bFile1.txt bFile2.txt bFile3.txt bFile4.txt bFile5.txt bFile6.txt bFile7.txt bFile8.txt bFile9.txt bFile10.txt
+	rm -f ren_aFile1.txt ren_aFile2.txt ren_aFile3.txt ren_aFile4.txt ren_aFile5.txt ren_aFile6.txt ren_aFile7.txt ren_aFile8.txt ren_aFile9.txt ren_aFile10.txt
 	rm -f my_A_CompressedaFile.tar.gz
 	rm -f my_B_CompressedbFile.tar.gz
