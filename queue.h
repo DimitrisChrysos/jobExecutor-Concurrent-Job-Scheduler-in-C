@@ -1,5 +1,5 @@
+// struct for the Nodes of the Queue
 typedef struct node Node;
-
 typedef struct node {
     void* value;
     int index;
@@ -7,8 +7,8 @@ typedef struct node {
     Node* child;
 } Node;
 
+// struct for the Queue
 typedef struct queue Queue;
-
 typedef struct queue {
     Node* first_node;
     Node* last_node;
@@ -42,7 +42,7 @@ int queue_empty(Queue myqueue);
 // returns the size of the queue
 int queue_size(Queue myqueue);
 
-
+// struct for the Triplet of the jobs
 typedef struct triplet Triplet;
 typedef struct triplet {
     char* jobID;
@@ -60,5 +60,5 @@ void delete_triplet(Triplet* mytriplet);
 // format a Triplet as a string, (memory deallocation is needed!)
 char* format_triplet(Triplet* mytriplet);
 
-// prints the whole queue and it's stats
+// prints the whole queue and it's stats (used for debugging)
 void print_queue_and_stats(Queue* myqueue);

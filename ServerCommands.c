@@ -44,8 +44,6 @@ char* commands(char** tokenized, char* unix_command) {
     }
 }
 
-void signal_handerUSR2(int sig) {}
-
 void exec_commands_in_queue(int sig) {
 
     // If queued processes exist execute them, until we reach the concurrency limit
@@ -91,7 +89,6 @@ void exec_commands_in_queue(int sig) {
                 count++;
             }
             tokenized[amount] = NULL;
-            
 
             // remove the front process from the queue and add it to the running_queue
             Triplet* removed_triplet = dequeue(info->myqueue);

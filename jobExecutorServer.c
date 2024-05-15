@@ -13,8 +13,6 @@
 
 ServerInfo *info;
 
-void useless_sig_handler() {}
-
 void jobExecutorServer() {
 
     // read the pid of the commander
