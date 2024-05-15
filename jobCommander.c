@@ -12,8 +12,7 @@
 
 #define PACKET_CAPACITY 100 // the max capacity of each packet
 
-void useless_sig_handler() {}
-
+// the function used for the jobCommander
 int jobCommander(int argc, char *argv[]) {
 
     // check if the server is active
@@ -44,7 +43,7 @@ int jobCommander(int argc, char *argv[]) {
     int mypid = getpid();
     write(fd_commander, &mypid, sizeof(int));
 
-    // write the number of strings for the pipe
+    // write the number of arguments for the pipe
     write(fd_commander, &argc, sizeof(int));
     
     // if packets > 1 -> server has way to many arguments and needs to send arguments in multiple packets

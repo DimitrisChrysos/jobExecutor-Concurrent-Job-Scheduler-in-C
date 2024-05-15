@@ -11,8 +11,10 @@
 #include "ServerCommands.h"
 #include <semaphore.h>
 
+// pointer allowing global access to the information of the Server 
 ServerInfo *info;
 
+// signal handler called when the Commander sends signal SIGUSR1 to execute commands
 void jobExecutorServer() {
 
     // read the pid of the commander
