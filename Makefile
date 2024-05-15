@@ -1,6 +1,6 @@
 jobCommander:
-	gcc -o jobCommander jobCommander.c queue.c
-	gcc -o jobExecutorServer jobExecutorServer.c queue.c ServerCommands.c
+	gcc -o jobCommander jobCommander.c queue.c -lpthread
+	gcc -o jobExecutorServer jobExecutorServer.c queue.c ServerCommands.c -lpthread
 	gcc -o progDelay progDelay.c
 
 clean:

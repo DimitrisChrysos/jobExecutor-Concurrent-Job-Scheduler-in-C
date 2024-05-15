@@ -98,11 +98,8 @@ int jobCommander(int argc, char *argv[]) {
                     broke = j;
                     break;
                 }
-                
                 packet_len += strlen(argv[j]) + 1;
-
                 if (j == index + PACKET_CAPACITY - 1) {
-
                     packet_len += 3;
                 }
             }
