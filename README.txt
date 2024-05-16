@@ -1,4 +1,4 @@
-Γενικά:
+- Γενικά:
     - Για το compilation χρειάζονται οι εντολές:
         1. make clean
         2. make
@@ -11,6 +11,14 @@
     μέχρι ένα σημείο αλλά μετά κρασάρει.
     - Για το τελευταίο λόγο, μάλλον είναι καλύτερο να τρέξει πρώτα το 
     «test_sh_scripts_2.sh».
+
+- Ιδιαιτερότητες σε test:
+    - test_jobExecutor_6.sh: Η υλοποίηση μου, με τον τερματισμό κάθε child process μέσω της εντολής
+    stop jobID, στέλνει signal SIGCHLD. Έτσι κατευθείαν μετά την εντολή stop, αν υπάρχει process στο
+    waiting Queue, γίνεται execute μία εντολή από αυτό. Για αυτό το λόγο, τα αποτέσματα μου έχουν 
+    κάποιες μικρές διαφορές σε αυτό το test, σχετικά με τα υποδεικνυόμενα.
+    - test_sh_scripts_1.sh: Ενώ όλες οι εντολές φαίνονται να εισέρχονται στο waiting Queue, 
+    εκτελούνται μόνο μέχρι ένα σημείο, δεν μπόρεσα να βρω τον λόγο.
 
 1. Φτιάχτηκε Queue Structure πλήρως από μένα και αποτελείται από δύο αρχεία:
     - queue.c: Ο κώδικας των συναρτήσεων, του Queue και του Triplet (struct 
@@ -51,19 +59,19 @@
     το μήνυμα. Ύστερα το μήνυμα σπάει σε tokens μίας λέξης και καλείται η συνάρτηση «commands()»
     για τη διαχείρηση της εντολής. Τέλος, ο Server ανοίγει το fifo pipe για γράψιμο από αυτόν
     και είτε γράφει το μήνυμα που πρέπει να σταλεί στον Commander είτε στέλνει "-1" για να δείξει
-    ότι δεν υπάρχει μήνυμα μετά κλείνει το pipe.
-    - Στην περίπτωση του signal SIGCHLD από τον τερματισμό ενός process παιδιού καλείται ο 
-    signal_handler/συνάρτηση «void exec_commands_in_queue()» η χρήση αυτού είναι να εκτελέσει,
+    ότι δεν υπάρχει μήνυμα, μετά κλείνει το pipe.
+    - Στην περίπτωση του signal SIGCHLD από τον τερματισμό ενός process παιδιού, καλείται ο 
+    signal_handler/συνάρτηση «void exec_commands_in_queue()», η χρήση αυτού είναι να εκτελέσει,
     αν και όσα γίνεται processes, αλλά θα υπάρξει περαιτέρω επεξήγηση στη συνέχεια. Μέσω ενός 
-    active while loop και της waitpid με flag «WNOHANG» με τον τερματισμό ενός παιδιού και 
-    επιστροφή του signal SIGCHLD, καλείται και η συνάρτηση remove_pid_from_run_queue() που 
-    διαγράφει το pid του child process που τελείωσε από το running queue.
+    active while loop και της waitpid με flag «WNOHANG», με τον τερματισμό ενός παιδιού και 
+    επιστροφή του signal SIGCHLD, καλείται η συνάρτηση remove_pid_from_run_queue(), η οποία 
+    διαγράφει το pid του child process που τελείωσε, από το running queue.
     - Αν σταλεί η εντολή «./jobCommander exit», ο Server κλείνει το pipe του για διάβασμα, 
     διαγράφει το .txt file, ελευθερώνει τη μνήμη για τα Triplets και διαγράφει τα Queues.
     Με το τρόπο αυτό ο Server κλείνει.
 
 4. Η διαχείρηση των commands από τον Commander προς τον Server γίνεται με τα αρχεία:
-    - ServerCommands.h: Περιέχει τον ορισμό του struct ServerInfo για το information του Server,
+    - ServerCommands.h: Περιέχει τον ορισμό του struct ServerInfo για το information του Server και
     τη δήλωση των συναρτήσεων για κάθε command.
     - ServerCommands.c: Η υλοποίηση σε κώδικα των παραπάνω.
     4.1. Η συνάρτηση «char* commands(char** tokenized, char* unix_command)»:
@@ -71,11 +79,11 @@
         εκτελεί τη λειτουργία της.
         - Επιστρέφει επίσης "-1" για μη επιστροφή μηνύματος στον Commander ή το μήνυμα.
     4.2. Η συνάρτηση/signal_handler «exec_commands_in_queue(int sig)»:
-        - Ελέγχει αν μπορούν να αρχίσουν την εκτέλεση τους άλλα processes και αν μπορούν εκτελεί 
+        - Ελέγχει αν μπορούν να αρχίσουν την εκτέλεση τους, άλλα processes και αν μπορούν εκτελεί 
         όσα γίνεται.
-        - Αυτό το κάνει, παίρνοντας κάθε φορά, το πρώτο process από το waiting Queue, βάζοντας το
-        στο running Queue, φτιάχνοντας το queue position για κάθε process στο waiting Queue και
-        εκτελώντας το χρησιμοποιόντας μία fork() και μία execvp().
+        - Αυτό το κάνει, παίρνοντας κάθε φορά, το πρώτο process από το waiting Queue και βάζοντας το
+        στο running Queue. Ύστερα, φτιάχνοντας το queue position για κάθε process στο waiting Queue και
+        εκτελώντας το, χρησιμοποιόντας μία fork() και μία execvp().
     4.3. Η συνάρτηση «Triplet* issueJob(char* job)»: 
         - Χρησιμοποιείται για το command «issueJob».
         - Δημιουργεί ένα Triplet για το job και το βάζει στο queue.
@@ -90,14 +98,14 @@
     4.5. Η συνάρτηση «char* poll(char** tokenized)»:
         - Χρησιμοποιείται για το command «poll running/queued».
         - Βρίσκει ποια από τις δύο ουρές θέλουμε, βρίσκει το συνολικό μέγεθος των Triplet υπό τη
-        μορφή string και κατασκευάζει ένα μεγάλο μήνυμα (string) με όλα τα Triplets στο Queue.
+        μορφή string και κατασκευάζει ένα μεγάλο μήνυμα (string), με όλα τα Triplets στο Queue.
         - Επιστρέφει το μήνυμα.
 
 5. Bash Script «multijob.sh»:
-    - Για κάθε .txt αρχείο που δέχεται ως argument φτιάχνει ένα νέο ίδιο temp.txt αρχείο (που 
+    - Για κάθε .txt αρχείο που δέχεται ως argument, φτιάχνει ένα νέο ίδιο temp.txt αρχείο (το οποίο 
     ύστερα διαγράφεται), όμως στην αρχή κάθε γραμμής του νέου .txt βάζει και το string 
     «./jobCommander issueJob ».
-    - Τρέχει κάθε εντολή του αρχείου .txt
+    - Τρέχει κάθε εντολή του αρχείου .txt.
 
 6. Bash Script «allJobsStop.sh»:
     - Για το waiting Queue, τρέχει και βάζει το output του command «/jobCommander poll queued» σε 
@@ -106,11 +114,3 @@
     «./jobCommander stop "$temp_jobID"» για κάθε ID μικρότερο του τελευταίου, ώστε να τερματίσει 
     κάθε jobID.
     - Κάνει το ίδιο και για το running Queue.
-
-7. Ιδιαιτερότητες σε test:
-    - test_jobExecutor_6.sh: Η υλοποίηση μου, με τον τερματισμό κάθε child process μέσω της εντολής
-    stop jobID, στέλνει signal SIGCHLD. Έτσι κατευθείαν μετά την εντολή stop, αν υπάρχει process στο
-    waiting Queue, γίνεται execute μία εντολή από αυτό. Για αυτό το λόγο, τα αποτέσματα μου έχουν 
-    κάποιες μικρές διαφορές σε αυτό το test, σχετικά με τα υποδεικνυόμενα.
-    - test_sh_scripts_1.sh: Ενώ όλες οι εντολές φαίνονται να εισέρχονται στο waiting Queue, 
-    εκτελούνται μόνο μέχρι ένα σημείο, δεν μπόρεσα να βρω τον λόγο.
