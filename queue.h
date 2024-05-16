@@ -54,7 +54,7 @@ typedef struct triplet {
 // initalizes a Triplet
 Triplet* init_triplet(char* jobID, char* job, int queuePosition, int pid);
 
-// deleted a Triplet
+// deletes a Triplet
 void delete_triplet(Triplet* mytriplet);
 
 // format a Triplet as a string, (memory deallocation is needed!)

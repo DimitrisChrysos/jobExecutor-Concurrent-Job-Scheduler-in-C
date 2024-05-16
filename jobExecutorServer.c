@@ -218,6 +218,8 @@ int main() {
         
         if (child_pid != 0 && child_pid != -1) {
             if (info->killed_pid == -1) {
+
+                // if child process finished (without stop jobID), remove it from running queue
                 remove_pid_from_run_queue(child_pid);
             }
             else {
@@ -258,6 +260,7 @@ int main() {
 
 void remove_pid_from_run_queue(pid_t mypid) {
 
+    // Find the node to be removed
     int qSize = info->running_queue->size;
     Node* temp_node = info->running_queue->first_node;
     for (int i = 0 ; i < qSize ; i++) {
@@ -268,7 +271,7 @@ void remove_pid_from_run_queue(pid_t mypid) {
         temp_node = temp_node->child;
     }
     
-
+    // delete the Triplet and free the node 
     Triplet *tempTriplet;
     if (temp_node->parent != NULL) {
         if (temp_node->child == NULL) {
