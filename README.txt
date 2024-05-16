@@ -2,6 +2,8 @@
     - Για το compilation χρειάζονται οι εντολές:
         1. make clean
         2. make
+    - Στα test όπου είχε «issueJob progDelay», το έκανα «issueJob ./progDelay»,
+    παρατήρησα ότι ενώ και τα δύο τρέχουν το 2ο είναι πιο stable.
     - Στο «test_sh_scripts_2.sh» άλλαξα την γραμμή 2 από 
         «./jobCommander issueJob setConcurrency 4» σε
         «./jobCommander setConcurrency 4», καθώς το πρώτο είναι λάθος.

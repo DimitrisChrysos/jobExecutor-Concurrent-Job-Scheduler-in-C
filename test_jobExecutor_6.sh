@@ -1,10 +1,10 @@
 killall progDelay
-./jobCommander issueJob progDelay 1000
-./jobCommander issueJob progDelay 1000
-./jobCommander issueJob progDelay 1000
-./jobCommander issueJob progDelay 1000
-./jobCommander issueJob progDelay 1000
-./jobCommander issueJob progDelay 1000
+./jobCommander issueJob ./progDelay 1000
+./jobCommander issueJob ./progDelay 1000
+./jobCommander issueJob ./progDelay 1000
+./jobCommander issueJob ./progDelay 1000
+./jobCommander issueJob ./progDelay 1000
+./jobCommander issueJob ./progDelay 1000
 ./jobCommander setConcurrency 4
 ./jobCommander poll running
 ./jobCommander poll queued
