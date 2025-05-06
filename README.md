@@ -3,7 +3,7 @@
 A system programming project that implements a job execution environment in C, using `fork()`, `exec*()`, signals, semaphores, and named pipes (FIFOs). The system allows users to submit shell commands for execution with controlled concurrency, manage job queues, and extend functionality via bash scripts.
 
 ### Note:
-- Check report.txt and requirements.pdf for a more detailed explanation.
+- Check report.txt and hw1-spring-2024.pdf for a more detailed explanation.
 
 ---
 
