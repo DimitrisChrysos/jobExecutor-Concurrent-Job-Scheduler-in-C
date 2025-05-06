@@ -2,9 +2,12 @@
 
 A system programming project that implements a job execution environment in C, using `fork()`, `exec*()`, signals, semaphores, and named pipes (FIFOs). The system allows users to submit shell commands for execution with controlled concurrency, manage job queues, and extend functionality via bash scripts.
 
+### Note:
+- Check report.txt and requirements.pdf for a more detailed explanation.
+
 ---
 
-## 🔧 Components Overview
+### 🔧 Components Overview
 
 ### jobCommander
 Acts as the command-line interface for the user. It:
