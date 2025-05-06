@@ -1,63 +1,75 @@
 # 🧵 jobExecutor: Concurrent Job Management System in C (Spring 2024)
 
-A system programming project that implements a job execution environment in C, using `fork()`, `exec*()`, signals, and named pipes (FIFOs). The system allows users to submit shell commands for execution with controlled concurrency, manage job queues, and extend functionality via bash scripts.
+A system programming project that implements a job execution environment in C, using `fork()`, `exec*()`, signals, semaphores, and named pipes (FIFOs). The system allows users to submit shell commands for execution with controlled concurrency, manage job queues, and extend functionality via bash scripts.
 
-## 🔧 Components
+---
 
-- **jobExecutorServer**:  
-  Manages job queue, executes jobs using child processes, and handles concurrency limits.
-  
-- **jobCommander**:  
-  Frontend client used to issue commands such as:
-  - `issueJob <job>`: Submit a new job.
-  - `setConcurrency <N>`: Set max number of concurrent jobs.
-  - `stop <jobID>`: Cancel or terminate a job.
-  - `poll [running|queued]`: View running or pending jobs.
-  - `exit`: Gracefully shutdown the server.
+## 🔧 Components Overview
 
-## 📂 Structure
+### jobCommander
+Acts as the command-line interface for the user. It:
+- Detects if the server is active and starts it if not.
+- Sends commands to the server through FIFO pipes.
+- Uses signals (`SIGUSR1`, `SIGUSR2`) to coordinate command transfer.
+- Waits for and prints server responses.
 
-- Written in C (or C++) for Linux.
-- Inter-process communication via named pipes (mkfifo).
-- Server uses `SIGCHLD` signal to track job termination.
-- Unique job IDs (`job_XX`) and queue management.
-- Includes:
-  - `jobCommander.c`
-  - `jobExecutorServer.c`
-  - `Makefile`
+### jobExecutorServer
+Handles:
+- Queueing of jobs (waiting/running).
+- Execution via `fork()`/`execvp()`.
+- Communication with jobCommander using FIFOs.
+- Signal handling for job lifecycle (`SIGCHLD`) and command execution (`SIGUSR1`, `SIGUSR2`).
 
-## 📜 Bash Scripts
+## 📂 File Structure
 
-- `multijob.sh <file1> <file2> ...`:  
-  Reads jobs from input files (one job per line) and submits them all.
-  
-- `allJobsStop.sh`:  
-  Stops all active and queued jobs using the `stop` command.
+- `jobCommander.c`: Handles user interaction and communication.
+- `jobExecutorServer.c`: Manages job queue, executes commands, signals, and process cleanup.
+- `queue.c/h`: Custom queue and job triplet structures and logic.
+- `ServerCommands.c/h`: Functions for job management (issue, stop, poll, etc.).
+- `Makefile`: For compilation.
+- `multijob.sh`: Batch job submission script.
+- `allJobsStop.sh`: Stops all running and queued jobs.
 
 ## ⚙️ Compilation & Execution
 
-1. Compile using:
-   ```bash
-   make
-   ```
+### Build
+```bash
+make clean
+make
+```
 
-2. Submit jobs like:
-   ```bash
-   ./jobCommander issueJob "ls -l"
-   ./jobCommander setConcurrency 4
-   ./jobCommander poll running
-   ./jobCommander stop job_2
-   ./jobCommander exit
-   ```
+### Example usage
+```bash
+Run the tests in bash
+```
 
-## 🧠 Design Notes
+## 📜 Bash Scripts
 
-- Designed for robustness and modularity with separate compilation.
-- Flow control through dynamic concurrency handling.
-- Uses file `jobExecutorServer.txt` to manage server state.
-- Implements signal handling and non-blocking I/O for responsiveness.
+### multijob.sh
+- Reads job files line-by-line and prepends each line with `./jobCommander issueJob`.
+- Submits all jobs in order.
+
+### allJobsStop.sh
+- Fetches all `queued` and `running` job IDs.
+- Iteratively calls `./jobCommander stop <jobID>` to terminate them.
+
+## 🧠 Design Specifics & Notes
+
+- Custom queue structure implemented in `queue.c/h`.
+- Commands are tokenized and handled via a `commands()` dispatcher.
+- Server uses `SIGCHLD` + `waitpid(WNOHANG)` to handle completed jobs and immediately execute the next in queue.
+- Commands like `issueJob`, `stop`, `poll`, and `exit` have distinct internal handling functions.
+- Communication uses dual named pipes for reading and writing, with signaling to synchronize actions and semaphore support for multi-argument command packaging.
+
+## 🧪 Test Notes & Known Behaviors
+
+- `test_sh_scripts_2.sh` was edited to fix a command (`setConcurrency` call was incorrect).
+- In `test_sh_scripts_1.sh`, execution continues up to a point before crashing—likely due to internal limitations or bugs.
+  - It's recommended to run `test_sh_scripts_2.sh` **before** `test_sh_scripts_1.sh`.
+- In `test_jobExecutor_6.sh`, due to immediate scheduling on `SIGCHLD`, small output differences may appear compared to expected output.
 
 ---
 
 Project for: **System Programming – Spring 2024**  
-Course: Κ24 – Προγραμματισμός Συστήματος
+Course: Κ24 – Προγραμματισμός Συστήματος  
+Author: Δημήτριος Χρυσός
